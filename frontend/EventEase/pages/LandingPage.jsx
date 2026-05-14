@@ -1,118 +1,219 @@
 import React from 'react';
-// Note: Ensure you have bootstrap CSS in your project
-// import 'bootstrap/dist/css/bootstrap.min.css';
 
-const EventEaseLanding = () => {
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Geist:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: #fff;
+    color: #111;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem; height: 60px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .logo {
+    font-family: 'Lora', serif; font-size: 1.25rem;
+    color: #111; text-decoration: none;
+  }
+  .nav-btn {
+    font-family: 'Geist', sans-serif; font-size: 0.875rem; font-weight: 500;
+    color: #111; background: none;
+    border: 1px solid #ddd; border-radius: 6px;
+    padding: 7px 16px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .nav-btn:hover { border-color: #aaa; background: #f7f7f7; }
+
+  .hero {
+    padding: 96px 2.5rem 80px;
+    max-width: 680px; margin: 0 auto;
+  }
+  h1 {
+    font-family: 'Lora', serif;
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    font-weight: 400; line-height: 1.15;
+    letter-spacing: -0.01em; color: #111;
+    margin-bottom: 1.25rem;
+  }
+  h1 em { font-style: italic; color: #555; }
+  .hero-sub {
+    font-size: 1.0625rem; font-weight: 300; line-height: 1.75;
+    color: #666; max-width: 480px; margin-bottom: 2.5rem;
+  }
+  .hero-actions { display: flex; gap: 10px; align-items: center; }
+  .btn-primary {
+    font-family: 'Geist', sans-serif; font-size: 0.9rem; font-weight: 500;
+    color: #fff; background: #111; border: none;
+    padding: 11px 22px; border-radius: 6px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: #333; }
+  .btn-text {
+    font-family: 'Geist', sans-serif; font-size: 0.875rem; font-weight: 300;
+    color: #888; background: none; border: none; cursor: pointer;
+    transition: color 0.15s;
+  }
+  .btn-text:hover { color: #111; }
+
+  hr { border: none; border-top: 1px solid #f0f0f0; }
+
+  .section { padding: 72px 2.5rem; max-width: 680px; margin: 0 auto; }
+  .section-label {
+    font-size: 0.75rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #aaa; margin-bottom: 2rem;
+  }
+  .steps { display: flex; flex-direction: column; }
+  .step {
+    display: grid; grid-template-columns: 28px 1fr;
+    gap: 1.25rem; padding: 1.5rem 0;
+    border-top: 1px solid #f0f0f0;
+  }
+  .step:last-child { border-bottom: 1px solid #f0f0f0; }
+  .step-n { font-size: 0.8rem; font-weight: 400; color: #ccc; padding-top: 3px; }
+  .step-title { font-size: 0.9375rem; font-weight: 500; color: #111; margin-bottom: 5px; }
+  .step-body { font-size: 0.875rem; font-weight: 300; color: #777; line-height: 1.7; }
+
+  .features-section { padding: 72px 2.5rem; max-width: 680px; margin: 0 auto; }
+  h2 {
+    font-family: 'Lora', serif; font-size: 1.625rem; font-weight: 400;
+    line-height: 1.3; color: #111; margin-bottom: 2rem;
+    letter-spacing: -0.01em;
+  }
+  .feat-list { display: flex; flex-direction: column; }
+  .feat-item {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 14px 0; border-top: 1px solid #f0f0f0; gap: 1rem;
+  }
+  .feat-item:last-child { border-bottom: 1px solid #f0f0f0; }
+  .feat-name { font-size: 0.9rem; font-weight: 400; color: #111; }
+  .feat-desc { font-size: 0.875rem; font-weight: 300; color: #999; text-align: right; max-width: 260px; }
+
+  .cta-section {
+    background: #f7f7f5; border-radius: 10px;
+    padding: 48px 40px;
+    max-width: 680px; margin: 0 auto 72px;
+  }
+  .cta-section h2 { margin-bottom: 0.5rem; }
+  .cta-sub { font-size: 0.9rem; font-weight: 300; color: #888; margin-bottom: 1.75rem; line-height: 1.6; }
+  .input-row { display: flex; gap: 8px; }
+  .email-input {
+    flex: 1; font-family: 'Geist', sans-serif; font-size: 0.875rem;
+    font-weight: 300; color: #111; background: #fff;
+    border: 1px solid #ddd; border-radius: 6px;
+    padding: 10px 14px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .email-input::placeholder { color: #bbb; }
+  .email-input:focus { border-color: #999; }
+
+  footer {
+    padding: 1.5rem 2.5rem; border-top: 1px solid #f0f0f0;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.8rem; font-weight: 300; color: #bbb;
+  }
+  .footer-links { display: flex; gap: 16px; }
+  .footer-links a { color: #bbb; text-decoration: none; }
+  .footer-links a:hover { color: #777; }
+
+  @media (max-width: 600px) {
+    nav, .hero, .section, .features-section { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .cta-section { margin-left: 1.25rem; margin-right: 1.25rem; padding: 32px 24px; }
+    .input-row { flex-direction: column; }
+    .feat-item { flex-direction: column; gap: 4px; }
+    .feat-desc { text-align: left; }
+    footer { flex-direction: column; gap: 10px; }
+  }
+`;
+
+const features = [
+  { name: 'Date polls', desc: 'Let the group vote, pick the winner in one click' },
+  { name: 'Task delegation', desc: 'Assign and track who is doing what' },
+  { name: 'RSVP tracking', desc: 'Know who is coming before the day arrives' },
+  { name: 'Calendar sync', desc: 'Export to Google, Apple, or Outlook' },
+  { name: 'Email reminders', desc: 'Automated nudges so nothing slips through' },
+];
+
+const steps = [
+  { n: '01', title: 'Invite your team', body: 'Add members and assign organizer roles. No complex permissions.' },
+  { n: '02', title: 'Pick a date', body: 'Run a quick poll or pin a date straight to the calendar.' },
+  { n: '03', title: 'Everyone gets notified', body: 'EventEase emails the details and syncs calendars automatically.' },
+];
+
+export default function LandingPage() {
   return (
-    <div className="bg-light min-vh-100">
-      {/* Navigation */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
-        <div className="container">
-          <a className="navbar-brand fw-bold" href="#">
-            <i className="bi bi-calendar-check-fill me-2"></i>EventEase
-          </a>
-          <div className="d-none d-md-block">
-            <button className="btn btn-outline-light rounded-pill px-4">Get Started</button>
-          </div>
-        </div>
+    <>
+      <style>{styles}</style>
+
+      <nav>
+        <a href="#" className="logo">EventEase</a>
+        <button className="nav-btn">Get started</button>
       </nav>
 
-      {/* Hero Section */}
-      <header className="py-5 bg-white border-bottom">
-        <div className="container py-5 text-center">
-          <h1 className="display-4 fw-bold text-dark mb-3">Event Planning, Simplified.</h1>
-          <p className="lead text-secondary mb-4 mx-auto" style={{ maxWidth: '700px' }}>
-            The all-in-one platform for student organizations, small businesses, and volunteers to coordinate meetings, conferences, and trips.
-          </p>
-          <div className="d-grid gap-3 d-sm-flex justify-content-sm-center">
-            <button className="btn btn-primary btn-lg px-5 fw-bold shadow">Create Event</button>
-            <button className="btn btn-outline-secondary btn-lg px-5">Learn More</button>
-          </div>
+      <div className="hero">
+        <h1>Organizing events<br /><em>shouldn't be hard.</em></h1>
+        <p className="hero-sub">
+          A simple tool for student groups and small teams to align on dates, split tasks, and keep everyone in the loop.
+        </p>
+        <div className="hero-actions">
+          <button className="btn-primary">Create an event</button>
+          <button className="btn-text">See how it works →</button>
         </div>
-      </header>
+      </div>
 
-      {/* Core Features */}
-      <section className="container py-5">
-        <div className="row g-4 py-5">
-          <div className="col-md-4">
-            <div className="card h-100 border-0 shadow-sm p-3">
-              <div className="card-body">
-                <div className="mb-3 text-primary"><i className="bi bi-people-fill fs-1"></i></div>
-                <h3 className="h5 fw-bold">Group Polls</h3>
-                <p className="text-muted small">Can't decide on a date? Let participants vote on the best time slot.</p>
+      <hr />
+
+      <div className="section">
+        <p className="section-label">How it works</p>
+        <div className="steps">
+          {steps.map(s => (
+            <div className="step" key={s.n}>
+              <span className="step-n">{s.n}</span>
+              <div>
+                <p className="step-title">{s.title}</p>
+                <p className="step-body">{s.body}</p>
               </div>
             </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card h-100 border-0 shadow-sm p-3">
-              <div className="card-body">
-                <div className="mb-3 text-primary"><i className="bi bi-calendar-event fs-1"></i></div>
-                <h3 className="h5 fw-bold">Auto-Sync</h3>
-                <p className="text-muted small">Once a date is chosen, it is automatically written to your calendar.</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card h-100 border-0 shadow-sm p-3">
-              <div className="card-body">
-                <div className="mb-3 text-primary"><i className="bi bi-bell-fill fs-1"></i></div>
-                <h3 className="h5 fw-bold">Instant Notifications</h3>
-                <p className="text-muted small">Automatic emails and notifications for all event participants.</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* Workflow Section (Reflecting User_flow.drawio) */}
-      <section className="bg-white py-5 border-top border-bottom">
-        <div className="container">
-          <h2 className="text-center fw-bold mb-5">How It Works</h2>
-          <div className="row justify-content-center">
-            <div className="col-lg-8">
-              <ul className="list-group list-group-flush">
-                <li className="list-group-item py-4 d-flex">
-                  <span className="badge bg-primary rounded-circle me-3 mt-1" style={{ width: '30px', height: '30px' }}>1</span>
-                  <div>
-                    <h5 className="fw-bold">Start at Dashboard</h5>
-                    <p className="mb-0 text-muted">Create a new event and enter basic details like title and description[cite: 2, 5].</p>
-                  </div>
-                </li>
-                <li className="list-group-item py-4 d-flex">
-                  <span className="badge bg-primary rounded-circle me-3 mt-1" style={{ width: '30px', height: '30px' }}>2</span>
-                  <div>
-                    <h5 className="fw-bold">Invite & Assign</h5>
-                    <p className="mb-0 text-muted">Invite participants. If they are organizers, they automatically receive editing rights[cite: 25, 32].</p>
-                  </div>
-                </li>
-                <li className="list-group-item py-4 d-flex">
-                  <span className="badge bg-primary rounded-circle me-3 mt-1" style={{ width: '30px', height: '30px' }}>3</span>
-                  <div>
-                    <h5 className="fw-bold">Schedule Your Way</h5>
-                    <p className="mb-0 text-muted">If the date is unknown, launch a <strong>Group Poll</strong>. Otherwise, pick a date on the calendar[cite: 10, 14].</p>
-                  </div>
-                </li>
-                <li className="list-group-item py-4 d-flex">
-                  <span className="badge bg-primary rounded-circle me-3 mt-1" style={{ width: '30px', height: '30px' }}>4</span>
-                  <div>
-                    <h5 className="fw-bold">Finalize & Notify</h5>
-                    <p className="mb-0 text-muted">The system saves the entry to the calendar and sends out automated notifications[cite: 18, 20].</p>
-                  </div>
-                </li>
-              </ul>
+      <hr />
+
+      <div className="features-section">
+        <h2>Everything you need,<br />nothing you don't.</h2>
+        <div className="feat-list">
+          {features.map(f => (
+            <div className="feat-item" key={f.name}>
+              <span className="feat-name">{f.name}</span>
+              <span className="feat-desc">{f.desc}</span>
             </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* Footer */}
-      <footer className="py-5 bg-dark text-white">
-        <div className="container text-center">
-          <p className="mb-0 opacity-75">© 2026 EventEase. All rights reserved.</p>
+      <div className="cta-section">
+        <h2>Ready to plan<br />your next event?</h2>
+        <p className="cta-sub">Free for groups under 50. No credit card needed.</p>
+        <div className="input-row">
+          <input className="email-input" type="email" placeholder="your@email.com" />
+          <button className="btn-primary">Sign up free</button>
+        </div>
+      </div>
+
+      <footer>
+        <span>© 2026 EventEase</span>
+        <div className="footer-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Contact</a>
         </div>
       </footer>
-    </div>
+    </>
   );
-};
-
-export default EventEaseLanding;
+}

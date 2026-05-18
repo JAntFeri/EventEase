@@ -54,6 +54,18 @@ const styles = `
     transition: background 0.15s;
   }
   .btn-primary:hover { background: #333; }
+  .btn-secondary {
+    font-family: 'Geist', sans-serif; font-size: 0.9rem; font-weight: 500;
+    color: #111; background: #fff; border: 1px solid #ddd;
+    padding: 11px 22px; border-radius: 6px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn-secondary:hover { border-color: #aaa; background: #f7f7f7; }
+  .btn-friends {
+    color: #0f3b34; background: #d9efe9; border: 1px solid #b7dbd1;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-friends:hover { background: #c6e6de; border-color: #9fcec1; }
   .btn-text {
     font-family: 'Geist', sans-serif; font-size: 0.875rem; font-weight: 300;
     color: #888; background: none; border: none; cursor: pointer;
@@ -146,23 +158,34 @@ const steps = [
 ];
 
 export default function LandingPage() {
+  const handleTeamStart = () => {
+    window.location.href = '/auth';
+  };
+
+  const handleFriendsStart = () => {
+    window.location.href = '/meetup';
+  };
+
   return (
     <>
       <style>{styles}</style>
 
       <nav>
         <a href="#" className="logo">EventEase</a>
-        <button className="nav-btn">Get started</button>
+        <div className="hero-actions">
+          <button className="nav-btn" onClick={handleTeamStart}>Get started for teams</button>
+          <button className="nav-btn btn-friends" onClick={handleFriendsStart}>Get started for friends</button>
+        </div>
       </nav>
 
       <div className="hero">
         <h1>Organizing events<br /><em>shouldn't be hard.</em></h1>
         <p className="hero-sub">
-          A simple tool for student groups and small teams to align on dates, split tasks, and keep everyone in the loop.
+          A simple tool for groups and small teams to align on dates, split tasks, and keep everyone in the loop.
         </p>
         <div className="hero-actions">
-          <button className="btn-primary">Create an event</button>
-          <button className="btn-text">See how it works →</button>
+          <button className="btn-primary" onClick={handleTeamStart}>Get started for teams</button>
+          <button className="btn-secondary btn-friends" onClick={handleFriendsStart}>Get started for friends</button>
         </div>
       </div>
 

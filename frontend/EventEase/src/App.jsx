@@ -1,13 +1,20 @@
 // src/App.js
 import React from 'react';
-import LandingPage from '../pages/LandingPage'; // Adjust path based on your folder structure
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LandingPage from '../pages/LandingPage';
+import AuthPage from '../pages/AuthPage';
+import MeetupPage from '../pages/MeetupPage';
 
 function App() {
   return (
-    <div className="App">
-      {/* This is where the landing page is rendered */}
-      <LandingPage />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/meetup" element={<MeetupPage />} />
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

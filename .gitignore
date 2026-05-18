@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 
 #drafts
 drafts.txt
+
+# backend env
+backend/.env

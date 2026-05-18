@@ -1,4 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
+import {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  getIdToken,
+} from 'firebase/auth';
+import { auth, googleProvider, hasConfig } from '../src/firebase/firebaseClient';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Geist:wght@300;400;500&display=swap');
@@ -56,6 +63,19 @@ const styles = `
     padding: 24px; background: #fff;
     display: grid; gap: 12px;
   }
+  .field {
+    display: grid; gap: 6px;
+  }
+  .label {
+    font-size: 0.8rem; color: #666;
+  }
+  .input {
+    font-family: 'Geist', sans-serif; font-size: 0.9rem;
+    border: 1px solid #ddd; border-radius: 6px;
+    padding: 10px 12px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .input:focus { border-color: #999; }
   .btn-primary {
     font-family: 'Geist', sans-serif; font-size: 0.9rem; font-weight: 500;
     color: #fff; background: #111; border: none;
@@ -80,6 +100,12 @@ const styles = `
   .helper {
     font-size: 0.8rem; color: #888; line-height: 1.6;
   }
+  .status {
+    font-size: 0.8rem; line-height: 1.6;
+    padding: 8px 10px; border-radius: 6px;
+  }
+  .status.error { color: #8a2a2a; background: #fdecec; border: 1px solid #f5caca; }
+  .status.success { color: #1f4b3f; background: #e8f6f1; border: 1px solid #cfe9e0; }
 
   @media (max-width: 600px) {
     nav, .auth-hero { padding-left: 1.25rem; padding-right: 1.25rem; }
@@ -87,6 +113,90 @@ const styles = `
 `;
 
 export default function AuthPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+  const showStatus = (type, message) => {
+    setStatus({ type, message });
+  };
+
+  const verifyBackend = async () => {
+    if (!auth?.currentUser) {
+      showStatus('error', 'No user session found after sign-in.');
+      return;
+    }
+
+    try {
+      const idToken = await getIdToken(auth.currentUser, true);
+      const res = await fetch(`${apiBase}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Backend verification failed.');
+      }
+
+      const data = await res.json();
+      showStatus('success', `Backend verified. UID: ${data.uid}`);
+    } catch (err) {
+      showStatus('error', err?.message || 'Backend verification failed.');
+    }
+  };
+
+  const handleGoogle = async () => {
+    if (!hasConfig || !auth || !googleProvider) {
+      showStatus('error', 'Firebase config is missing. Add it to your .env file.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signInWithPopup(auth, googleProvider);
+      showStatus('success', 'Signed in successfully. Verifying backend...');
+      await verifyBackend();
+    } catch (err) {
+      showStatus('error', err?.message || 'Google sign-in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmail = async () => {
+    if (!hasConfig || !auth) {
+      showStatus('error', 'Firebase config is missing. Add it to your .env file.');
+      return;
+    }
+
+    if (!email || !password) {
+      showStatus('error', 'Add both email and password to continue.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+        showStatus('success', 'Signed in successfully. Verifying backend...');
+        await verifyBackend();
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+        showStatus('success', 'Account created. Verifying backend...');
+        await verifyBackend();
+      }
+    } catch (err) {
+      showStatus('error', err?.message || 'Email sign-in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-wrap">
       <style>{styles}</style>
@@ -103,12 +213,48 @@ export default function AuthPage() {
         </p>
 
         <div className="auth-card">
-          <button className="btn-primary">Continue with Google</button>
+          <button className="btn-primary" onClick={handleGoogle} disabled={loading}>
+            Continue with Google
+          </button>
           <div className="divider">or</div>
-          <button className="btn-outline">Continue with email</button>
+          <div className="field">
+            <label className="label" htmlFor="email">Email</label>
+            <input
+              id="email"
+              className="input"
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="password">Password</label>
+            <input
+              id="password"
+              className="input"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button className="btn-outline" onClick={handleEmail} disabled={loading}>
+            {isLogin ? 'Continue with email' : 'Create account with email'}
+          </button>
+          <button
+            className="btn-outline"
+            onClick={() => setIsLogin((prev) => !prev)}
+            disabled={loading}
+          >
+            {isLogin ? 'Need an account? Create one' : 'Have an account? Sign in'}
+          </button>
+          {status.message && (
+            <div className={`status ${status.type}`}>{status.message}</div>
+          )}
           <p className="helper">
-            Firebase auth will power this flow. We will hook these buttons to Firebase once the
-            project is created.
+            Firebase auth powers this flow. Add your config to .env (see .env.example) before
+            testing in the browser. Backend base URL can be set with VITE_API_URL.
           </p>
         </div>
       </div>

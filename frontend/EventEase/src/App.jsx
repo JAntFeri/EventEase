@@ -1,14 +1,12 @@
-// src/App.js
+// src/App.jsx
 import React from 'react';
-import LandingPage from '../pages/LandingPage'; // Adjust path based on your folder structure
+import LandingPage from './pages/LandingPage';
+import "./index.css"; // <-- This must sit right here at the root entry point
 
-function App() {
+export default function App() {
   return (
     <div className="App">
-      {/* This is where the landing page is rendered */}
       <LandingPage />
     </div>
   );
 }
-
-export default App;

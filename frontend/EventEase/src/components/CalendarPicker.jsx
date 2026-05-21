@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 export default function CalendarPicker({ 
   selectedDates = [], 
   onChange, 
+  dateStatuses = {},
+  onDateStatusesChange,
   isPollMode = false, 
   allowedDates = null 
 }) {
@@ -26,6 +28,25 @@ export default function CalendarPicker({
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     if (allowedDates && !allowedDates.includes(dateStr)) return;
 
+    if (allowedDates) {
+      const currentStatus = dateStatuses[dateStr] || 'no';
+      const nextStatus = currentStatus === 'no'
+        ? 'yes'
+        : currentStatus === 'yes'
+          ? 'if_needed'
+          : 'no';
+
+      const updatedStatuses = { ...dateStatuses };
+      if (nextStatus === 'no') {
+        delete updatedStatuses[dateStr];
+      } else {
+        updatedStatuses[dateStr] = nextStatus;
+      }
+
+      if (onDateStatusesChange) onDateStatusesChange(updatedStatuses);
+      return;
+    }
+
     let updatedDates = selectedDates.includes(dateStr)
       ? selectedDates.filter(d => d !== dateStr)
       : [...selectedDates, dateStr];
@@ -39,13 +60,23 @@ export default function CalendarPicker({
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     let stateStyles = 'hover:bg-gray-100 text-gray-900';
     
-    if (selectedDates.includes(dateKey)) {
+    if (allowedDates) {
+      if (!allowedDates.includes(dateKey)) {
+        stateStyles = 'text-gray-300 cursor-not-allowed opacity-40';
+      } else {
+        const dateStatus = dateStatuses[dateKey] || 'no';
+        if (dateStatus === 'yes') {
+          stateStyles = 'bg-green-500 text-white font-medium hover:bg-green-600';
+        } else if (dateStatus === 'if_needed') {
+          stateStyles = 'bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500';
+        } else {
+          stateStyles = 'bg-white border border-red-400 text-red-600 font-medium hover:bg-red-50';
+        }
+      }
+    } else if (selectedDates.includes(dateKey)) {
       stateStyles = 'bg-black text-white font-medium hover:bg-gray-800';
-    } else if (allowedDates) {
-      stateStyles = allowedDates.includes(dateKey) 
-        ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-medium hover:bg-indigo-100' 
-        : 'text-gray-300 cursor-not-allowed opacity-40';
     }
+
     days.push({ type: 'day', val: d, key: dateKey, stateStyles });
   }
 
@@ -79,9 +110,17 @@ export default function CalendarPicker({
       </div>
       
       {isPollMode && (
-        <p className="text-xs text-gray-500 mt-3 text-center font-light">
-          {allowedDates ? "Izberite modre datume, ki vam ustrezajo." : "Izberete lahko več datumov za glasovanje."}
-        </p>
+        <div className="text-xs text-gray-600 mt-3 font-light space-y-1">
+          {allowedDates ? (
+            <>
+              <p className="flex items-center justify-center gap-2"><span className="h-3 w-3 rounded-sm border border-red-400 bg-white" />Ne</p>
+              <p className="flex items-center justify-center gap-2"><span className="h-3 w-3 rounded-sm bg-green-500" />Da</p>
+              <p className="flex items-center justify-center gap-2"><span className="h-3 w-3 rounded-sm bg-yellow-400" />Ce bo potrebno</p>
+            </>
+          ) : (
+            <p className="text-center">Izberete lahko več datumov za glasovanje.</p>
+          )}
+        </div>
       )}
     </div>
   );

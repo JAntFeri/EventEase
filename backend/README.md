@@ -33,16 +33,19 @@
     
 ## Backend setup
 
-### 1. Naloži zig
-    https://ziglang.org/learn/getting-started/#direct
+### 1. Naloži zig 0.16
+	[Zig](https://ziglang.org/download/)
 ### 2. V vsc terminalu 
-    Linux:
-    `export DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
-    Windows:
-    `$env:DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
-### 3. Pojdi v mapo kjer je build.zig in zaženi backend z:
-    `zig build run`
-
+    - Linux:
+    	`export DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
+    - Windows:
+    	`$env:DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
+### 3. Pojdi v mapo kjer je build.zig in zgradi backend:
+    `zig build`
+### 4. Zazeni backend:
+	Zazeni aplikacijo ki je v /zig-output/bin
+### 4.1 Alternativa
+	Ce je kaj narobe z zgornjim nacimon lahko probas z `zig build run`
 
 
 ### Nikolaj backend info

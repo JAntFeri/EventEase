@@ -36,7 +36,10 @@
 ### 1. Naloži zig
     https://ziglang.org/learn/getting-started/#direct
 ### 2. V vsc terminalu 
+    Linux:
     `export DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
+    Windows:
+    `$env:DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
 ### 3. Pojdi v mapo kjer je build.zig in zaženi backend z:
     `zig build run`
 

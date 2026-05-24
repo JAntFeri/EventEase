@@ -143,6 +143,6 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Zig backend
-zig-cache/
+**/.zig-cache/
 zig-out/
 zig-pkg/

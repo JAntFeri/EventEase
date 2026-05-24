@@ -1,4 +1,6 @@
-# Instalacija podatkovne baze POSTGREs
+# Backend setup
+
+## Instalacija podatkovne baze POSTGREs
 ### 1. Naloži postgres
 ### 2. V terminalu pojedi v default postgres račun:
     `sudo psql -U postgres`
@@ -13,7 +15,7 @@
 ### 6. 👍
 
 
-## Preveri če dela
+### Preveri če dela
 ### 1. Logi se in v podatkovno bazo:
     `psql -U admin -d eventeasedb`
 ### 2. Listi vse tabele:
@@ -29,5 +31,27 @@
     public | votes        | table | admin
     (4 rows)
     
-### 4. 👍 glhf
+## Backend setup
+
+### 1. Naloži zig
+    https://ziglang.org/learn/getting-started/#direct
+### 2. V vsc terminalu 
+    `export DATABASE_URL="postgresql://admin:admin@localhost/eventeasedb"`
+### 3. Pojdi v mapo kjer je build.zig in zaženi backend z:
+    `zig build run`
+
+
+
+### Nikolaj backend info
+    
+## Backend info:
+TO JE VERY FINICKY
+
+Fixing it soon(TM)
+
+Anyway ce hoces ka dela moras:
+
+1. Copy podatkovna_shema.db v .../backend/logic/src (ce si kaj posodobil or smth)
+2. Dodaj `export DATABASE_URL="postgresql://user:pass@localhost/eventease"` (no idea kak to na windows naredis)
+3. Moli
 

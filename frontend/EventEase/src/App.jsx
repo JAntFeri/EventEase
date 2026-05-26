@@ -3,7 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import InvitePage from './pages/InvitePage'; // The page wrapper we created earlier
-import EventPollView from './views/EventPollView';
+import AdminFinalizeView from './views/AdminFinalizeView';
 import "./index.css"; 
 
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
           <Route path="/invite/:token" element={<InvitePage />} />
           
           {/* Admin link: matches /admin/your-admin-token-here */}
-          <Route path="/admin/:adminToken" element={<EventPollView />} />
+          <Route path="/admin/:adminToken" element={<AdminFinalizeView />} />
           
           
         </Routes>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-export default function EventPollView({ eventData: propEventData, onBack }) {
+export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams(); // Extracts the token parameter as matched in App.jsx
   const navigate = useNavigate();
   

@@ -8,4 +8,14 @@ export default defineConfig({
     react(),
     tailwindcss(), // 2. Add it to the plugins array
   ],
+  server: {
+    proxy: {
+      // Vse zahteve, ki se začnejo z /api, bodo preusmerjene na Zig backend
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

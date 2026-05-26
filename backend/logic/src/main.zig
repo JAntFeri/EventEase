@@ -39,10 +39,9 @@ pub fn main(init: std.process.Init) !void {
     var router = try server.router(.{});
 
     router.post("/api/polls", routes.createPoll, .{});
-    router.get("/api/polls/:share_token", routes.getPoll, .{});
-    router.post("/api/polls/:share_token/votes", routes.submitVote, .{});
-    router.post("/api/polls/:admin_token/finalize", routes.finalizePoll, .{});
-
+    router.get("/api/polls/share/:share_token", routes.getPoll, .{});
+    router.post("/api/polls/share/:share_token/vote", routes.submitVote, .{});
+    router.post("/api/polls/admin/:admin_token/finalize", routes.finalizePoll, .{});
     router.all("/*", static_handler.handle, .{});
 
     std.debug.print("listening http://localhost:3000/\n", .{});

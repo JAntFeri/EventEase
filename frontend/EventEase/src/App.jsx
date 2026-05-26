@@ -1,12 +1,28 @@
 // src/App.jsx
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import "./index.css"; // <-- This must sit right here at the root entry point
+import InvitePage from './pages/InvitePage'; // The page wrapper we created earlier
+import EventPollView from './pages/EventPollView';
+import "./index.css"; 
 
 export default function App() {
   return (
     <div className="App">
-      <LandingPage />
+      <BrowserRouter>
+        <Routes>
+          {/* Default Home view where CreateEventWizard sits */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* Regular user link: matches /invite/1b546da5-9814-435f-8385-ac1a40bcebc0 */}
+          <Route path="/invite/:token" element={<InvitePage />} />
+          
+          {/* Admin link: matches /admin/your-admin-token-here */}
+          <Route path="/admin/:adminToken" element={<EventPollView />} />
+          
+          
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }

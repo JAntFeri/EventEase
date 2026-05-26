@@ -1,21 +1,28 @@
-// src/App.js
+// src/App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LandingPage from '../pages/LandingPage';
-import AuthPage from '../pages/AuthPage';
-import MeetupPage from '../pages/MeetupPage';
+import LandingPage from './pages/LandingPage';
+import InvitePage from './pages/InvitePage'; // The page wrapper we created earlier
+import AdminFinalizeView from './views/AdminFinalizeView';
+import "./index.css"; 
 
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/meetup" element={<MeetupPage />} />
-        <Route path="*" element={<LandingPage />} />
-      </Routes>
-    </BrowserRouter>
+    <div className="App">
+      <BrowserRouter>
+        <Routes>
+          {/* Default Home view where CreateEventWizard sits */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* Regular user link: matches /invite/1b546da5-9814-435f-8385-ac1a40bcebc0 */}
+          <Route path="/invite/:token" element={<InvitePage />} />
+          
+          {/* Admin link: matches /admin/your-admin-token-here */}
+          <Route path="/admin/:adminToken" element={<AdminFinalizeView />} />
+          
+          
+        </Routes>
+      </BrowserRouter>
+    </div>
   );
 }
-
-export default App;

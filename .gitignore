@@ -148,3 +148,7 @@ drafts.txt
 
 # backend env
 backend/.env
+# Zig backend
+**/.zig-cache/
+zig-out/
+zig-pkg/

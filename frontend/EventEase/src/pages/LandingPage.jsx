@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import LandingView from './LandingView';
+import LandingView from '../views/LandingView';
 import CreateEventWizard from './CreateEventWizard';
-import InviteView from './InviteView';
+import InviteView from '../views/InviteView';
 
 export default function LandingPage() {
   const [view, setView] = useState('landing');

@@ -1,7 +1,7 @@
 // src/pages/InvitePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import InviteView from './InviteView';
+import InviteView from '../views/InviteView';
 
 export default function InvitePage() {
   const { token } = useParams(); 

@@ -3,7 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import InvitePage from './pages/InvitePage'; // The page wrapper we created earlier
-import EventPollView from './pages/EventPollView';
+import EventPollView from './views/EventPollView';
 import "./index.css"; 
 
 export default function App() {

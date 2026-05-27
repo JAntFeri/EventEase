@@ -1,6 +1,7 @@
 // src/pages/InviteView.jsx
 import React, { useState } from 'react';
 import CalendarPicker from '../components/CalendarPicker';
+import VoteResults from '../components/VoteResults';
 
 export default function InviteView({ eventData }) {
   const [guestName, setGuestName] = useState('');
@@ -11,7 +12,14 @@ export default function InviteView({ eventData }) {
   const [claimedTasks, setClaimedTasks] = useState([]);
   const [showNoDatePopup, setShowNoDatePopup] = useState(false);
 
-  const { title, description, suggestedDates, tasks, organizerName, share_token } = eventData;
+  const { title, description, suggestedDates, tasks, organizerName, share_token, votes = [] } = eventData;
+  const [resultsVisible, setResultsVisible] = useState(false);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsError, setResultsError] = useState('');
+  const [resultsData, setResultsData] = useState(() => ({
+    suggestedDates: suggestedDates || [],
+    votes
+  }));
 
   const toggleTask = (taskName) => {
     setClaimedTasks(prev => prev.includes(taskName) ? prev.filter(t => t !== taskName) : [...prev, taskName]);
@@ -53,6 +61,51 @@ export default function InviteView({ eventData }) {
     }
   };
 
+  const fetchResults = async () => {
+    try {
+      setResultsError('');
+      setResultsLoading(true);
+      const response = await fetch(`/api/polls/share/${share_token}`);
+
+      if (!response.ok) {
+        throw new Error('Rezultatov ni mogoče pridobiti. Poskusite znova.');
+      }
+
+      const data = await response.json();
+      const formattedSlots = (data.time_slots || []).map(slot => {
+        if (!slot.start_time) return null;
+        const cleanDate = slot.start_time.replace('T', ' ').split(' ')[0];
+        return {
+          id: slot.id,
+          date: cleanDate
+        };
+      }).filter(Boolean);
+
+      if (!Array.isArray(data.votes)) {
+        setResultsError('Backend ne vraca glasov. Preverite API odgovor.');
+      }
+
+      setResultsData({
+        suggestedDates: formattedSlots,
+        votes: Array.isArray(data.votes) ? data.votes : []
+      });
+    } catch (error) {
+      setResultsError(error.message || 'Napaka pri nalaganju rezultatov.');
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  const handleToggleResults = async () => {
+    if (resultsVisible) {
+      setResultsVisible(false);
+      return;
+    }
+
+    setResultsVisible(true);
+    await fetchResults();
+  };
+
   // 1. CONDITIONAL COMPONENT: Render this "Hvala" section if submitted successfully
   if (isSubmitted) {
     return (
@@ -66,12 +119,36 @@ export default function InviteView({ eventData }) {
         <p className="text-sm text-gray-600 max-w-sm font-light leading-relaxed mb-6">
           Vaša prisotnost in izbrani termini za dogodek <span className="font-medium text-gray-900">"{title}"</span> so uspešno zabeleženi. Ko organizator zaključi glasovanje, boste prejeli obvestilo.
         </p>
-        <button 
-          onClick={() => setIsSubmitted(false)} 
-          className="text-xs font-medium text-gray-400 hover:text-black underline transition"
-        >
-          Spremeni moje odgovore
-        </button>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={handleToggleResults}
+            className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline transition"
+          >
+            {resultsVisible ? 'Skrij rezultate glasovanja' : 'Prikazi rezultate glasovanja'}
+          </button>
+          <button 
+            onClick={() => setIsSubmitted(false)} 
+            className="text-xs font-medium text-gray-400 hover:text-black underline transition"
+          >
+            Spremeni moje odgovore
+          </button>
+        </div>
+        {resultsVisible && (
+          <div className="w-full mt-6">
+            {resultsLoading && (
+              <p className="text-xs text-gray-500 font-light">Nalagam rezultate...</p>
+            )}
+            {!resultsLoading && resultsError && (
+              <p className="text-xs text-red-500 font-light">{resultsError}</p>
+            )}
+            {!resultsLoading && !resultsError && (
+              <VoteResults
+                suggestedDates={resultsData.suggestedDates}
+                votes={resultsData.votes}
+              />
+            )}
+          </div>
+        )}
       </div>
     );
   }

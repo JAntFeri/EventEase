@@ -105,6 +105,15 @@ pub fn createPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
 }
 
 pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
+    const VoteOption = struct {
+        slot_id: []const u8,
+        status: []const u8,
+    };
+
+    const VoteRecord = struct {
+        participant_name: []const u8,
+        date_votes: []const VoteOption,
+    };
     const share_token_hex = req.param("share_token") orelse {
         res.status = 400;
         return;
@@ -163,6 +172,53 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         });
     }
 
+    var votes_result = try conn.query(
+        \\ SELECT id, participant_name
+        \\ FROM votes WHERE poll_id = $1 ORDER BY created_at
+    , .{poll_id_raw});
+
+    const VoteRow = struct {
+        vote_id_raw: []const u8,
+        participant_name: []const u8,
+    };
+
+    var vote_rows: std.ArrayList(VoteRow) = .empty;
+
+    while (try votes_result.next()) |vote_row| {
+        try vote_rows.append(res.arena, .{
+            .vote_id_raw = try res.arena.dupe(u8, try vote_row.get([]const u8, 0)),
+            .participant_name = try res.arena.dupe(u8, try vote_row.get([]const u8, 1)),
+        });
+    }
+    votes_result.deinit();
+
+    var votes_list: std.ArrayList(VoteRecord) = .empty;
+
+    for (vote_rows.items) |vote_row| {
+        var options_result = try conn.query(
+            \\ SELECT time_slot_id, status
+            \\ FROM vote_options WHERE vote_id = $1 ORDER BY time_slot_id
+        , .{vote_row.vote_id_raw});
+        defer options_result.deinit();
+
+        var options_list: std.ArrayList(VoteOption) = .empty;
+
+        while (try options_result.next()) |opt_row| {
+            const slot_id_raw = try res.arena.dupe(u8, try opt_row.get([]const u8, 0));
+            const status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1));
+
+            try options_list.append(res.arena, .{
+                .slot_id = try uuidToHex(slot_id_raw, res.arena),
+                .status = status,
+            });
+        }
+
+        try votes_list.append(res.arena, .{
+            .participant_name = vote_row.participant_name,
+            .date_votes = options_list.items,
+        });
+    }
+
     try res.json(.{
         .id = poll_id_hex,
         .title = title,
@@ -171,6 +227,7 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         .is_finalized = is_finalized,
         .final_slot_id = final_slot_id_hex,
         .time_slots = slots.items,
+        .votes = votes_list.items,
     }, .{});
 }
 

@@ -7,7 +7,7 @@ export default function InviteView({ eventData }) {
   const [guestName, setGuestName] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false); // Track submission state inline
   
-  // State maps clean "YYYY-MM-DD" string values to boolean values: { "2026-05-13": true }
+  // State maps "YYYY-MM-DD" to vote status: { "2026-05-13": "yes" | "if_needed" }
   const [dateVotes, setDateVotes] = useState({}); 
   const [claimedTasks, setClaimedTasks] = useState([]);
   const [showNoDatePopup, setShowNoDatePopup] = useState(false);
@@ -29,14 +29,16 @@ export default function InviteView({ eventData }) {
     e.preventDefault();
     if (!guestName.trim()) return alert('Vpišite ime.');
     
-    // Check if at least one target option evaluates to true
+    // Check if at least one date is marked yes/if_needed
     const selectedDates = Object.keys(dateVotes).filter(dateStr => dateVotes[dateStr]);
     if (selectedDates.length === 0) return setShowNoDatePopup(true);
 
     // Map backend array options cleanly to database slot IDs
     const formattedVotes = suggestedDates.map(slot => ({
       slot_id: slot.id, 
-      status: dateVotes[slot.date] ? 'yes' : 'no' 
+      status: dateVotes[slot.date] === 'if_needed'
+        ? 'if_need_be'
+        : (dateVotes[slot.date] === 'yes' ? 'yes' : 'no')
     }));
 
     try {
@@ -122,13 +124,13 @@ export default function InviteView({ eventData }) {
         <div className="flex flex-col items-center gap-3">
           <button
             onClick={handleToggleResults}
-            className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline transition"
+            className="text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-md shadow-sm transition"
           >
             {resultsVisible ? 'Skrij rezultate glasovanja' : 'Prikazi rezultate glasovanja'}
           </button>
           <button 
             onClick={() => setIsSubmitted(false)} 
-            className="text-xs font-medium text-gray-400 hover:text-black underline transition"
+            className="text-xs font-medium text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:text-gray-900 px-4 py-2 rounded-md transition"
           >
             Spremeni moje odgovore
           </button>

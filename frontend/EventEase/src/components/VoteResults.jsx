@@ -11,10 +11,14 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
 
   const slotVoteCounts = {};
   const slotVoters = {};
+  const slotMaybeCounts = {};
+  const slotMaybeVoters = {};
 
   suggestedDates.forEach((slot) => {
     slotVoteCounts[slot.id] = 0;
     slotVoters[slot.id] = [];
+    slotMaybeCounts[slot.id] = 0;
+    slotMaybeVoters[slot.id] = [];
   });
 
   votes.forEach((voteRecord) => {
@@ -26,6 +30,12 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
         slotVoteCounts[choice.slot_id] = (slotVoteCounts[choice.slot_id] || 0) + 1;
         if (!slotVoters[choice.slot_id]) slotVoters[choice.slot_id] = [];
         slotVoters[choice.slot_id].push(voterName);
+      }
+
+      if (choice.status === 'if_need_be' || choice.status === 'if_needed') {
+        slotMaybeCounts[choice.slot_id] = (slotMaybeCounts[choice.slot_id] || 0) + 1;
+        if (!slotMaybeVoters[choice.slot_id]) slotMaybeVoters[choice.slot_id] = [];
+        slotMaybeVoters[choice.slot_id].push(voterName);
       }
     });
   });
@@ -60,7 +70,10 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
       {suggestedDates.map((slot) => {
         const voteCount = slotVoteCounts[slot.id] || 0;
         const votersList = slotVoters[slot.id] || [];
-        const percentage = Math.round((voteCount / totalUniqueParticipants) * 100) || 0;
+        const maybeCount = slotMaybeCounts[slot.id] || 0;
+        const maybeVotersList = slotMaybeVoters[slot.id] || [];
+        const yesPercentage = Math.round((voteCount / totalUniqueParticipants) * 100) || 0;
+        const maybePercentage = Math.round((maybeCount / totalUniqueParticipants) * 100) || 0;
 
         return (
           <div key={slot.id} className="p-4 flex items-center justify-between gap-4 bg-white">
@@ -68,25 +81,47 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
               <p className="text-sm font-medium text-gray-900 capitalize">
                 {formatDate(slot.date)}
               </p>
-              {voteCount > 0 ? (
-                <p className="text-xs text-gray-500 font-light truncate mt-0.5">
-                  Ustreza uporabnikom: <span className="font-medium text-gray-700">{votersList.join(', ')}</span>
-                </p>
+              {(voteCount > 0 || maybeCount > 0) ? (
+                <div className="text-xs text-gray-500 font-light mt-0.5 space-y-1">
+                  {voteCount > 0 && (
+                    <p className="truncate">
+                      Ustreza uporabnikom: <span className="font-medium text-gray-700">{votersList.join(', ')}</span>
+                    </p>
+                  )}
+                  {maybeCount > 0 && (
+                    <p className="truncate">
+                      Ce bo potrebno: <span className="font-medium text-gray-700">{maybeVotersList.join(', ')}</span>
+                    </p>
+                  )}
+                </div>
               ) : (
                 <p className="text-xs text-gray-400 font-light mt-0.5">Ni oddanih glasov za ta termin</p>
               )}
             </div>
 
-            <div className="flex items-center gap-3 w-32 justify-end shrink-0">
-              <div className="w-full bg-gray-100 rounded-full h-1.5 hidden sm:block">
-                <div
-                  className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: `${percentage}%` }}
-                />
+            <div className="w-40 shrink-0 space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-100 rounded-full h-1.5 hidden sm:block">
+                  <div
+                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${yesPercentage}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-700 tabular-nums text-right min-w-[56px]">
+                  {voteCount} {getSlovenianVoteLabel(voteCount)}
+                </span>
               </div>
-              <span className="text-xs font-medium text-gray-700 tabular-nums min-w-[36px] text-right">
-                {voteCount} {getSlovenianVoteLabel(voteCount)}
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-100 rounded-full h-1.5 hidden sm:block">
+                  <div
+                    className="bg-yellow-400 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${maybePercentage}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-700 tabular-nums text-right min-w-[56px]">
+                  {maybeCount} {getSlovenianVoteLabel(maybeCount)}
+                </span>
+              </div>
             </div>
           </div>
         );

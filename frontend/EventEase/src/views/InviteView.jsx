@@ -126,7 +126,7 @@ export default function InviteView({ eventData }) {
             onClick={handleToggleResults}
             className="text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-md shadow-sm transition"
           >
-            {resultsVisible ? 'Skrij rezultate glasovanja' : 'Prikazi rezultate glasovanja'}
+            {resultsVisible ? 'Skrij rezultate glasovanja' : 'Prikazi trenutne rezultate glasovanja'}
           </button>
           <button 
             onClick={() => setIsSubmitted(false)} 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import VoteResults from '../components/VoteResults';
 
 export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams(); 
@@ -75,28 +76,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
 
   const { title, description, suggestedDates = [], votes = [] } = eventData;
 
-  const slotVoteCounts = {};
-  const slotVoters = {};
-
-  suggestedDates.forEach(slot => {
-    slotVoteCounts[slot.id] = 0;
-    slotVoters[slot.id] = [];
-  });
-
-  votes.forEach(voteRecord => {
-    const voterName = voteRecord.participant_name || "Neznanec";
-    const choices = voteRecord.choices || voteRecord.date_votes || [];
-    choices.forEach(choice => {
-      if (choice.status === 'yes') {
-        slotVoteCounts[choice.slot_id] = (slotVoteCounts[choice.slot_id] || 0) + 1;
-        if (!slotVoters[choice.slot_id]) slotVoters[choice.slot_id] = [];
-        slotVoters[choice.slot_id].push(voterName);
-      }
-    });
-  });
-
-  const totalUniqueParticipants = votes.length || 1;
-
   const handleFinalize = async (e) => {
     e.preventDefault();
     if (!adminToken) return alert('Nimate skrbniških pravic za zaključek tega dogodka.');
@@ -124,15 +103,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const getSlovenianVoteLabel = (count) => {
-    if (count === 0) return 'glasov';
-    const mod100 = count % 100;
-    if (mod100 === 1) return 'glas';
-    if (mod100 === 2) return 'glasa';
-    if (mod100 === 3 || mod100 === 4) return 'glasi';
-    return 'glasov';
   };
 
   const formatDate = (dateStr) => {
@@ -172,47 +142,42 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           </p>
         </div>
 
-        <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 shadow-sm">
-          {suggestedDates.map((slot) => {
-            const voteCount = slotVoteCounts[slot.id] || 0;
-            const votersList = slotVoters[slot.id] || [];
-            const percentage = Math.round((voteCount / totalUniqueParticipants) * 100) || 0;
-            const isChecked = selectedSlotId === slot.id;
-
-            return (
-              //TOLE BO COMPONENT 
-              <div key={slot.id} className={`p-4 flex items-center justify-between gap-4 transition-colors ${isChecked ? 'bg-amber-50/40' : 'bg-white'}`}>
-                <label className="flex items-center gap-3.5 cursor-pointer flex-1 min-w-0">
-                  <input 
-                    type="radio" 
-                    name="admin-finalize-slot" 
-                    className="w-5 h-5 border-gray-300 text-amber-600 focus:ring-amber-500 accent-amber-600 cursor-pointer"
-                    checked={isChecked}
-                    onChange={() => setSelectedSlotId(slot.id)}
-                  />
-                  <div className="truncate">
-                    <p className="text-sm font-medium text-gray-900 capitalize">{formatDate(slot.date)}</p>
-                    {voteCount > 0 ? (
-                      <p className="text-xs text-gray-500 font-light truncate mt-0.5">
-                        Ustreza uporabnikom: <span className="font-medium text-gray-700">{votersList.join(', ')}</span>
-                      </p>
-                    ) : (
-                      <p className="text-xs text-gray-400 font-light mt-0.5">Ni oddanih glasov za ta termin</p>
-                    )}
+        <div className="space-y-3">
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Izberite končni termin:
+          </label>
+          
+          <div className="space-y-2">
+            {suggestedDates.map((slot) => {
+              const isChecked = selectedSlotId === slot.id;
+              
+              return (
+                <div 
+                  key={slot.id} 
+                  className={`flex items-start gap-3 p-2 rounded-xl transition-colors ${
+                    isChecked ? 'bg-amber-50/60 ring-1 ring-amber-200' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="pt-4 pl-2">
+                    <input 
+                      type="radio" 
+                      name="admin-finalize-slot" 
+                      className="w-5 h-5 border-gray-300 text-amber-600 focus:ring-amber-500 accent-amber-600 cursor-pointer"
+                      checked={isChecked}
+                      onChange={() => setSelectedSlotId(slot.id)}
+                    />
                   </div>
-                </label>
-
-                <div className="flex items-center gap-3 w-32 justify-end shrink-0">
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 hidden sm:block">
-                    <div className="bg-amber-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}/>
+                  
+                  <div className="flex-1 pointer-events-none">
+                    <VoteResults 
+                      suggestedDates={[slot]} 
+                      votes={votes} 
+                    />
                   </div>
-                  <span className="text-xs font-medium text-gray-700 tabular-nums min-w-[36px] text-right">
-                    {voteCount} {getSlovenianVoteLabel(voteCount)}
-                  </span>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs rounded-lg p-3 font-light leading-relaxed">
@@ -225,7 +190,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             disabled={isSubmitting}
             className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 disabled:bg-gray-400 disabled:scale-100 transition shadow-sm"
           >
-            {isSubmitting ? 'Zaključujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
+            {isSubmitting ? 'Zaklujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
           </button>
         </div>
       </form>

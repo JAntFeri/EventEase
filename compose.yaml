@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: .
+      target: final
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://admin:admin@db:5432/eventeasedb
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: eventeasedb
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d eventeasedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:

@@ -39,6 +39,19 @@ CREATE TABLE vote_options (
     status VARCHAR(10) NOT NULL CHECK (status IN ('yes', 'no', 'if_need_be')),
     UNIQUE(vote_id, time_slot_id)
 );
+-- 5. Tabela za predlaganje datumov
+CREATE TABLE slot_suggestions (
+    id UUID PRIMARY KEY,
+    poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+    suggested_by VARCHAR(100) NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'accepted', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_slot_suggestions_poll_id ON slot_suggestions(poll_id);
 
 CREATE INDEX idx_polls_share_token ON polls(share_token);
 CREATE INDEX idx_polls_admin_token ON polls(admin_token);

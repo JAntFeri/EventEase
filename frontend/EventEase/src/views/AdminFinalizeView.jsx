@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import VoteResults from '../components/VoteResults';
+import CalendarPicker from '../components/CalendarPicker';
 
 export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams(); 
@@ -14,6 +15,8 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   const [error, setError] = useState(null);
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [pendingSuggestion, setPendingSuggestion] = useState(null);
 
   useEffect(() => {
     if (propEventData) {
@@ -42,6 +45,30 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           })),
           votes: data.votes || []
         });
+
+        // TODO: replace with real API call when GET /api/polls/admin/{adminToken} is ready
+        // const adminResponse = await fetch(`/api/polls/admin/${adminToken}`);
+        // const adminData = await adminResponse.json();
+        // setSuggestions(adminData.suggestions || []);
+
+        // Mock suggestions for now
+        setSuggestions([
+          {
+            id: 'mock-1',
+            poll_id: 'mock',
+            suggested_by: 'Janez',
+            start_time: '2026-06-20T00:00:00Z',
+            status: 'pending'
+          },
+          {
+            id: 'mock-2',
+            poll_id: 'mock',
+            suggested_by: 'Ana',
+            start_time: '2026-06-25T00:00:00Z',
+            status: 'pending'
+          }
+        ]);
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -56,6 +83,16 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
       setLoading(false);
     }
   }, [basicToken, propEventData]);
+
+  const handleSuggestionAction = async (suggestionId, action) => {
+    // TODO: uncomment when endpoints are ready
+    // await fetch(`/api/polls/admin/${adminToken}/suggestions/${suggestionId}/${action}`, { method: 'POST' });
+
+    setSuggestions(prev => prev.map(s =>
+      s.id === suggestionId ? { ...s, status: action === 'accept' ? 'accepted' : 'rejected' } : s
+    ));
+    setPendingSuggestion(null);
+  };
 
   if (loading) {
     return (
@@ -86,9 +123,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
       const response = await fetch(`/api/polls/admin/${adminToken}/finalize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          final_slot_id: selectedSlotId 
-        })
+        body: JSON.stringify({ final_slot_id: selectedSlotId })
       });
 
       if (response.ok) {
@@ -105,11 +140,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateStr).toLocaleDateString('sl-SI', options);
-  };
+  const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
 
   return (
     <div className="py-12 md:py-16 px-4 max-w-2xl mx-auto">
@@ -132,6 +163,56 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
         )}
       </div>
 
+      {/* Suggestions section */}
+      {pendingSuggestions.length > 0 && (
+        <div className="mb-8 border border-blue-100 bg-blue-50 rounded-xl p-4">
+          <h2 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-1">
+            Predlogi datumov udeležencev
+          </h2>
+          <p className="text-xs text-blue-600 font-light mb-3">
+            Modro označeni datumi so predlogi udeležencev. Kliknite na datum za sprejem ali zavrnitev.
+          </p>
+          <CalendarPicker
+            suggestions={pendingSuggestions.map(s => ({
+              id: s.id,
+              date: s.start_time.split('T')[0],
+              suggested_by: s.suggested_by
+            }))}
+            onSuggestionSelect={(date, dateSuggestions) => setPendingSuggestion(dateSuggestions[0])}
+          />
+          {pendingSuggestion && (
+            <div className="mt-3 p-3 bg-white border border-blue-200 rounded-lg">
+              <p className="text-sm text-gray-800 mb-2">
+                Predlog od <strong>{pendingSuggestion.suggested_by}</strong>: {pendingSuggestion.date}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSuggestionAction(pendingSuggestion.id, 'accept')}
+                  className="text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition"
+                >
+                  Sprejmi → dodaj v poll
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSuggestionAction(pendingSuggestion.id, 'reject')}
+                  className="text-xs text-gray-700 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-md transition"
+                >
+                  Zavrni
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingSuggestion(null)}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-2 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <form onSubmit={handleFinalize} className="space-y-6">
         <div>
           <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider block mb-1">
@@ -146,11 +227,9 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
             Izberite končni termin:
           </label>
-          
           <div className="space-y-2">
             {suggestedDates.map((slot) => {
               const isChecked = selectedSlotId === slot.id;
-              
               return (
                 <div 
                   key={slot.id} 
@@ -167,7 +246,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
                       onChange={() => setSelectedSlotId(slot.id)}
                     />
                   </div>
-                  
                   <div className="flex-1 pointer-events-none">
                     <VoteResults 
                       suggestedDates={[slot]} 

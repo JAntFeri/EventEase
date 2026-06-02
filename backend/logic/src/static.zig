@@ -4,12 +4,12 @@ const App = @import("main.zig").App;
 
 const MimeMap = std.StaticStringMap([]const u8).initComptime(.{
     .{ ".html", "text/html; charset=utf-8" },
-    .{ ".css",  "text/css; charset=utf-8" },
-    .{ ".js",   "application/javascript; charset=utf-8" },
+    .{ ".css", "text/css; charset=utf-8" },
+    .{ ".js", "application/javascript; charset=utf-8" },
     .{ ".json", "application/json" },
-    .{ ".svg",  "image/svg+xml" },
-    .{ ".png",  "image/png" },
-    .{ ".ico",  "image/x-icon" },
+    .{ ".svg", "image/svg+xml" },
+    .{ ".png", "image/png" },
+    .{ ".ico", "image/x-icon" },
 });
 
 pub fn handle(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
@@ -18,10 +18,10 @@ pub fn handle(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     if (path.len == 0) path = "index.html";
 
     const io = app.io;
-    const full_path = try std.fs.path.join(res.arena, &.{ "public", path });
+    const full_path = try std.fs.path.join(res.arena, &.{ "/usr/share/nginx/html", path });
 
     var file = std.Io.Dir.cwd().openFile(io, full_path, .{}) catch {
-        const index_path = try std.fs.path.join(res.arena, &.{ "public", "index.html" });
+        const index_path = try std.fs.path.join(res.arena, &.{ "/usr/share/nginx/html", "index.html" });
         var index_file = std.Io.Dir.cwd().openFile(io, index_path, .{}) catch {
             res.status = 404;
             res.body = "Not Found";

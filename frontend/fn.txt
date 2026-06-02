@@ -1,0 +1,1241 @@
+src/components/VoteResults.jsx:import React from 'react';
+src/components/VoteResults.jsx:export default function VoteResults({ suggestedDates = [], votes = [] }) {
+src/components/VoteResults.jsx:  if (!votes.length) {
+src/components/VoteResults.jsx:    return (
+src/components/VoteResults.jsx:      <div className="text-xs text-gray-500 font-light">
+src/components/VoteResults.jsx:        Trenutno se ni oddanih glasov za prikaz.
+src/components/VoteResults.jsx:      </div>
+src/components/VoteResults.jsx:    );
+src/components/VoteResults.jsx:  }
+src/components/VoteResults.jsx:  const slotVoteCounts = {};
+src/components/VoteResults.jsx:  const slotVoters = {};
+src/components/VoteResults.jsx:  const slotMaybeCounts = {};
+src/components/VoteResults.jsx:  const slotMaybeVoters = {};
+src/components/VoteResults.jsx:  suggestedDates.forEach((slot) => {
+src/components/VoteResults.jsx:    slotVoteCounts[slot.id] = 0;
+src/components/VoteResults.jsx:    slotVoters[slot.id] = [];
+src/components/VoteResults.jsx:    slotMaybeCounts[slot.id] = 0;
+src/components/VoteResults.jsx:    slotMaybeVoters[slot.id] = [];
+src/components/VoteResults.jsx:  });
+src/components/VoteResults.jsx:  votes.forEach((voteRecord) => {
+src/components/VoteResults.jsx:    const voterName = voteRecord.participant_name || 'Neznanec';
+src/components/VoteResults.jsx:    const choices = voteRecord.choices || voteRecord.date_votes || [];
+src/components/VoteResults.jsx:    choices.forEach((choice) => {
+src/components/VoteResults.jsx:      if (choice.status === 'yes') {
+src/components/VoteResults.jsx:        slotVoteCounts[choice.slot_id] = (slotVoteCounts[choice.slot_id] || 0) + 1;
+src/components/VoteResults.jsx:        if (!slotVoters[choice.slot_id]) slotVoters[choice.slot_id] = [];
+src/components/VoteResults.jsx:        slotVoters[choice.slot_id].push(voterName);
+src/components/VoteResults.jsx:      }
+src/components/VoteResults.jsx:      if (choice.status === 'if_need_be' || choice.status === 'if_needed') {
+src/components/VoteResults.jsx:        slotMaybeCounts[choice.slot_id] = (slotMaybeCounts[choice.slot_id] || 0) + 1;
+src/components/VoteResults.jsx:        if (!slotMaybeVoters[choice.slot_id]) slotMaybeVoters[choice.slot_id] = [];
+src/components/VoteResults.jsx:        slotMaybeVoters[choice.slot_id].push(voterName);
+src/components/VoteResults.jsx:      }
+src/components/VoteResults.jsx:    });
+src/components/VoteResults.jsx:  });
+src/components/VoteResults.jsx:  const totalUniqueParticipants = votes.length || 1;
+src/components/VoteResults.jsx:  const getSlovenianVoteLabel = (count) => {
+src/components/VoteResults.jsx:    if (count === 0) return 'glasov';
+src/components/VoteResults.jsx:    const mod100 = count % 100;
+src/components/VoteResults.jsx:    if (mod100 === 1) return 'glas';
+src/components/VoteResults.jsx:    if (mod100 === 2) return 'glasa';
+src/components/VoteResults.jsx:    if (mod100 === 3 || mod100 === 4) return 'glasi';
+src/components/VoteResults.jsx:    return 'glasov';
+src/components/VoteResults.jsx:  };
+src/components/VoteResults.jsx:  const formatDate = (dateStr) => {
+src/components/VoteResults.jsx:    if (!dateStr) return '';
+src/components/VoteResults.jsx:    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+src/components/VoteResults.jsx:    return new Date(dateStr).toLocaleDateString('sl-SI', options);
+src/components/VoteResults.jsx:  };
+src/components/VoteResults.jsx:  if (!suggestedDates.length) {
+src/components/VoteResults.jsx:    return (
+src/components/VoteResults.jsx:      <div className="text-xs text-gray-500 font-light">
+src/components/VoteResults.jsx:        Ni razpolozljivih terminov za prikaz rezultatov.
+src/components/VoteResults.jsx:      </div>
+src/components/VoteResults.jsx:    );
+src/components/VoteResults.jsx:  }
+src/components/VoteResults.jsx:  return (
+src/components/VoteResults.jsx:    <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 shadow-sm">
+src/components/VoteResults.jsx:      {suggestedDates.map((slot) => {
+src/components/VoteResults.jsx:        const voteCount = slotVoteCounts[slot.id] || 0;
+src/components/VoteResults.jsx:        const votersList = slotVoters[slot.id] || [];
+src/components/VoteResults.jsx:        const maybeCount = slotMaybeCounts[slot.id] || 0;
+src/components/VoteResults.jsx:        const maybeVotersList = slotMaybeVoters[slot.id] || [];
+src/components/VoteResults.jsx:        const yesPercentage = Math.round((voteCount / totalUniqueParticipants) * 100) || 0;
+src/components/VoteResults.jsx:        const maybePercentage = Math.round((maybeCount / totalUniqueParticipants) * 100) || 0;
+src/components/VoteResults.jsx:        return (
+src/components/VoteResults.jsx:          <div key={slot.id} className="p-4 flex items-center justify-between gap-4 bg-white">
+src/components/VoteResults.jsx:            <div className="flex-1 min-w-0">
+src/components/VoteResults.jsx:              <p className="text-sm font-medium text-gray-900 capitalize">
+src/components/VoteResults.jsx:                {formatDate(slot.date)}
+src/components/VoteResults.jsx:              </p>
+src/components/VoteResults.jsx:              {(voteCount > 0 || maybeCount > 0) ? (
+src/components/VoteResults.jsx:                <div className="text-xs text-gray-500 font-light mt-0.5 space-y-1">
+src/components/VoteResults.jsx:                  {voteCount > 0 && (
+src/components/VoteResults.jsx:                    <p className="truncate">
+src/components/VoteResults.jsx:                      Ustreza uporabnikom: <span className="font-medium text-gray-700">{votersList.join(', ')}</span>
+src/components/VoteResults.jsx:                    </p>
+src/components/VoteResults.jsx:                  )}
+src/components/VoteResults.jsx:                  {maybeCount > 0 && (
+src/components/VoteResults.jsx:                    <p className="truncate">
+src/components/VoteResults.jsx:                      Ce bo potrebno: <span className="font-medium text-gray-700">{maybeVotersList.join(', ')}</span>
+src/components/VoteResults.jsx:                    </p>
+src/components/VoteResults.jsx:                  )}
+src/components/VoteResults.jsx:                </div>
+src/components/VoteResults.jsx:              ) : (
+src/components/VoteResults.jsx:                <p className="text-xs text-gray-400 font-light mt-0.5">Ni oddanih glasov za ta termin</p>
+src/components/VoteResults.jsx:              )}
+src/components/VoteResults.jsx:            </div>
+src/components/VoteResults.jsx:            <div className="w-40 shrink-0 space-y-1">
+src/components/VoteResults.jsx:              <div className="flex items-center gap-2">
+src/components/VoteResults.jsx:                <div className="flex-1 bg-gray-100 rounded-full h-1.5 hidden sm:block">
+src/components/VoteResults.jsx:                  <div
+src/components/VoteResults.jsx:                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+src/components/VoteResults.jsx:                    style={{ width: `${yesPercentage}%` }}
+src/components/VoteResults.jsx:                  />
+src/components/VoteResults.jsx:                </div>
+src/components/VoteResults.jsx:                <span className="text-xs font-medium text-gray-700 tabular-nums text-right min-w-[56px]">
+src/components/VoteResults.jsx:                  {voteCount} {getSlovenianVoteLabel(voteCount)}
+src/components/VoteResults.jsx:                </span>
+src/components/VoteResults.jsx:              </div>
+src/components/VoteResults.jsx:              <div className="flex items-center gap-2">
+src/components/VoteResults.jsx:                <div className="flex-1 bg-gray-100 rounded-full h-1.5 hidden sm:block">
+src/components/VoteResults.jsx:                  <div
+src/components/VoteResults.jsx:                    className="bg-yellow-400 h-1.5 rounded-full transition-all duration-500"
+src/components/VoteResults.jsx:                    style={{ width: `${maybePercentage}%` }}
+src/components/VoteResults.jsx:                  />
+src/components/VoteResults.jsx:                </div>
+src/components/VoteResults.jsx:                <span className="text-xs font-medium text-gray-700 tabular-nums text-right min-w-[56px]">
+src/components/VoteResults.jsx:                  {maybeCount} {getSlovenianVoteLabel(maybeCount)}
+src/components/VoteResults.jsx:                </span>
+src/components/VoteResults.jsx:              </div>
+src/components/VoteResults.jsx:            </div>
+src/components/VoteResults.jsx:          </div>
+src/components/VoteResults.jsx:        );
+src/components/VoteResults.jsx:      })}
+src/components/VoteResults.jsx:    </div>
+src/components/VoteResults.jsx:  );
+src/components/VoteResults.jsx:}
+src/main.jsx:import "./index.css"; // <-- This must sit right here at the root entry point
+src/main.jsx:import { StrictMode } from "react";
+src/main.jsx:import { createRoot } from "react-dom/client";
+src/main.jsx:import App from "./App.jsx";
+src/main.jsx:createRoot(document.getElementById("root")).render(
+src/main.jsx:  <StrictMode>
+src/main.jsx:    <App />
+src/main.jsx:  </StrictMode>
+src/main.jsx:);
+src/index.css:@import "tailwindcss";
+src/components/CalendarPicker.jsx:import React, { useState } from "react";
+src/components/CalendarPicker.jsx:export default function CalendarPicker({
+src/components/CalendarPicker.jsx:  selectedDates = [],
+src/components/CalendarPicker.jsx:  onChange,
+src/components/CalendarPicker.jsx:  dateStatuses = {},
+src/components/CalendarPicker.jsx:  onDateStatusesChange,
+src/components/CalendarPicker.jsx:  isPollMode = false,
+src/components/CalendarPicker.jsx:  allowedDates = null,
+src/components/CalendarPicker.jsx:  suggestions = [],
+src/components/CalendarPicker.jsx:  onSuggestionSelect,
+src/components/CalendarPicker.jsx:}) {
+src/components/CalendarPicker.jsx:  const [currentDate, setCurrentDate] = useState(new Date());
+src/components/CalendarPicker.jsx:  const year = currentDate.getFullYear();
+src/components/CalendarPicker.jsx:  const month = currentDate.getMonth();
+src/components/CalendarPicker.jsx:  const monthNames = [
+src/components/CalendarPicker.jsx:    "Januar", "Februar", "Marec", "April", "Maj", "Junij",
+src/components/CalendarPicker.jsx:    "Julij", "Avgust", "September", "Oktober", "November", "December",
+src/components/CalendarPicker.jsx:  ];
+src/components/CalendarPicker.jsx:  const weekDays = ["Po", "To", "Sr", "Če", "Pe", "So", "Ne"];
+src/components/CalendarPicker.jsx:  const firstDayOfMonth = new Date(year, month, 1).getDay();
+src/components/CalendarPicker.jsx:  const blankCells = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+src/components/CalendarPicker.jsx:  const daysInMonth = new Date(year, month + 1, 0).getDate();
+src/components/CalendarPicker.jsx:  const handleDateClick = (day) => {
+src/components/CalendarPicker.jsx:    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+src/components/CalendarPicker.jsx:    if (allowedDates && !allowedDates.includes(dateStr)) return;
+src/components/CalendarPicker.jsx:    if (allowedDates) {
+src/components/CalendarPicker.jsx:      const currentStatus = dateStatuses[dateStr] || "no";
+src/components/CalendarPicker.jsx:      const nextStatus =
+src/components/CalendarPicker.jsx:        currentStatus === "no" ? "yes"
+src/components/CalendarPicker.jsx:        : currentStatus === "yes" ? "if_needed"
+src/components/CalendarPicker.jsx:        : "no";
+src/components/CalendarPicker.jsx:      const updatedStatuses = { ...dateStatuses };
+src/components/CalendarPicker.jsx:      if (nextStatus === "no") {
+src/components/CalendarPicker.jsx:        delete updatedStatuses[dateStr];
+src/components/CalendarPicker.jsx:      } else {
+src/components/CalendarPicker.jsx:        updatedStatuses[dateStr] = nextStatus;
+src/components/CalendarPicker.jsx:      }
+src/components/CalendarPicker.jsx:      if (onDateStatusesChange) onDateStatusesChange(updatedStatuses);
+src/components/CalendarPicker.jsx:      return;
+src/components/CalendarPicker.jsx:    }
+src/components/CalendarPicker.jsx:    const updatedDates = selectedDates.includes(dateStr)
+src/components/CalendarPicker.jsx:      ? selectedDates.filter((d) => d !== dateStr)
+src/components/CalendarPicker.jsx:      : [...selectedDates, dateStr];
+src/components/CalendarPicker.jsx:    if (onChange) onChange(updatedDates);
+src/components/CalendarPicker.jsx:  };
+src/components/CalendarPicker.jsx:  const days = [];
+src/components/CalendarPicker.jsx:  for (let i = 0; i < blankCells; i++) days.push({ type: "blank", val: i });
+src/components/CalendarPicker.jsx:  for (let d = 1; d <= daysInMonth; d++) {
+src/components/CalendarPicker.jsx:    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+src/components/CalendarPicker.jsx:    const dateSuggestions = suggestions.filter((s) => s.date === dateKey);
+src/components/CalendarPicker.jsx:    const isSuggested = dateSuggestions.length > 0;
+src/components/CalendarPicker.jsx:    let stateStyles = "hover:bg-gray-100 text-gray-900";
+src/components/CalendarPicker.jsx:    if (allowedDates) {
+src/components/CalendarPicker.jsx:      if (!allowedDates.includes(dateKey)) {
+src/components/CalendarPicker.jsx:        stateStyles = "text-gray-300 cursor-not-allowed opacity-40";
+src/components/CalendarPicker.jsx:      } else {
+src/components/CalendarPicker.jsx:        const dateStatus = dateStatuses[dateKey] || "no";
+src/components/CalendarPicker.jsx:        if (dateStatus === "yes") {
+src/components/CalendarPicker.jsx:          stateStyles = "bg-green-500 text-white font-medium hover:bg-green-600";
+src/components/CalendarPicker.jsx:        } else if (dateStatus === "if_needed") {
+src/components/CalendarPicker.jsx:          stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
+src/components/CalendarPicker.jsx:        } else {
+src/components/CalendarPicker.jsx:          stateStyles = "bg-white border border-red-400 text-red-600 font-medium hover:bg-red-50";
+src/components/CalendarPicker.jsx:        }
+src/components/CalendarPicker.jsx:      }
+src/components/CalendarPicker.jsx:    } else if (selectedDates.includes(dateKey)) {
+src/components/CalendarPicker.jsx:      stateStyles = "bg-black text-white font-medium hover:bg-gray-800";
+src/components/CalendarPicker.jsx:    } else if (isSuggested) {
+src/components/CalendarPicker.jsx:      stateStyles = "ring-2 ring-blue-400 text-gray-900 hover:bg-gray-100";
+src/components/CalendarPicker.jsx:    }
+src/components/CalendarPicker.jsx:    days.push({ type: "day", val: d, key: dateKey, stateStyles, isSuggested, dateSuggestions });
+src/components/CalendarPicker.jsx:  }
+src/components/CalendarPicker.jsx:  return (
+src/components/CalendarPicker.jsx:    <div className="bg-white border border-gray-200 rounded-xl p-4 w-full max-w-sm mx-auto">
+src/components/CalendarPicker.jsx:      <div className="flex items-center justify-between mb-4">
+src/components/CalendarPicker.jsx:        <button
+src/components/CalendarPicker.jsx:          type="button"
+src/components/CalendarPicker.jsx:          className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition"
+src/components/CalendarPicker.jsx:          onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
+src/components/CalendarPicker.jsx:        >
+src/components/CalendarPicker.jsx:          &larr;
+src/components/CalendarPicker.jsx:        </button>
+src/components/CalendarPicker.jsx:        <span className="text-sm font-semibold text-gray-900">
+src/components/CalendarPicker.jsx:          {monthNames[month]} {year}
+src/components/CalendarPicker.jsx:        </span>
+src/components/CalendarPicker.jsx:        <button
+src/components/CalendarPicker.jsx:          type="button"
+src/components/CalendarPicker.jsx:          className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition"
+src/components/CalendarPicker.jsx:          onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
+src/components/CalendarPicker.jsx:        >
+src/components/CalendarPicker.jsx:          &rarr;
+src/components/CalendarPicker.jsx:        </button>
+src/components/CalendarPicker.jsx:      </div>
+src/components/CalendarPicker.jsx:      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-400 mb-2">
+src/components/CalendarPicker.jsx:        {weekDays.map((wd) => (
+src/components/CalendarPicker.jsx:          <span key={wd}>{wd}</span>
+src/components/CalendarPicker.jsx:        ))}
+src/components/CalendarPicker.jsx:      </div>
+src/components/CalendarPicker.jsx:      <div className="grid grid-cols-7 gap-1 text-center">
+src/components/CalendarPicker.jsx:        {days.map((item) =>
+src/components/CalendarPicker.jsx:          item.type === "blank" ? (
+src/components/CalendarPicker.jsx:            <span key={`b-${item.val}`} className="aspect-square" />
+src/components/CalendarPicker.jsx:          ) : (
+src/components/CalendarPicker.jsx:            <div key={item.key} className="relative group">
+src/components/CalendarPicker.jsx:              <button
+src/components/CalendarPicker.jsx:                type="button"
+src/components/CalendarPicker.jsx:                className={`aspect-square rounded-lg text-sm transition flex items-center justify-center w-full ${item.stateStyles}`}
+src/components/CalendarPicker.jsx:                onClick={() => {
+src/components/CalendarPicker.jsx:                  if (item.isSuggested && onSuggestionSelect) {
+src/components/CalendarPicker.jsx:                    onSuggestionSelect(item.key, item.dateSuggestions);
+src/components/CalendarPicker.jsx:                  }
+src/components/CalendarPicker.jsx:                  handleDateClick(item.val);
+src/components/CalendarPicker.jsx:                }}
+src/components/CalendarPicker.jsx:              >
+src/components/CalendarPicker.jsx:                {item.val}
+src/components/CalendarPicker.jsx:              </button>
+src/components/CalendarPicker.jsx:              {item.isSuggested && (
+src/components/CalendarPicker.jsx:                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10 hidden group-hover:block w-max max-w-[140px]">
+src/components/CalendarPicker.jsx:                  <div className="bg-gray-900 text-white text-[10px] rounded px-2 py-1 leading-snug">
+src/components/CalendarPicker.jsx:                    {item.dateSuggestions.map((s) => s.suggested_by).join(", ")}
+src/components/CalendarPicker.jsx:                  </div>
+src/components/CalendarPicker.jsx:                </div>
+src/components/CalendarPicker.jsx:              )}
+src/components/CalendarPicker.jsx:            </div>
+src/components/CalendarPicker.jsx:          )
+src/components/CalendarPicker.jsx:        )}
+src/components/CalendarPicker.jsx:      </div>
+src/components/CalendarPicker.jsx:      {isPollMode && (
+src/components/CalendarPicker.jsx:        <div className="text-xs text-gray-600 mt-3 font-light space-y-1">
+src/components/CalendarPicker.jsx:          {allowedDates ? (
+src/components/CalendarPicker.jsx:            <>
+src/components/CalendarPicker.jsx:              <p className="flex items-center justify-center gap-2">
+src/components/CalendarPicker.jsx:                <span className="h-3 w-3 rounded-sm border border-red-400 bg-white" />
+src/components/CalendarPicker.jsx:                Ne
+src/components/CalendarPicker.jsx:              </p>
+src/components/CalendarPicker.jsx:              <p className="flex items-center justify-center gap-2">
+src/components/CalendarPicker.jsx:                <span className="h-3 w-3 rounded-sm bg-green-500" />
+src/components/CalendarPicker.jsx:                Da
+src/components/CalendarPicker.jsx:              </p>
+src/components/CalendarPicker.jsx:              <p className="flex items-center justify-center gap-2">
+src/components/CalendarPicker.jsx:                <span className="h-3 w-3 rounded-sm bg-yellow-400" />
+src/components/CalendarPicker.jsx:                Ce bo potrebno
+src/components/CalendarPicker.jsx:              </p>
+src/components/CalendarPicker.jsx:            </>
+src/components/CalendarPicker.jsx:          ) : (
+src/components/CalendarPicker.jsx:            <p className="text-center">Izberete lahko več datumov za glasovanje.</p>
+src/components/CalendarPicker.jsx:          )}
+src/components/CalendarPicker.jsx:        </div>
+src/components/CalendarPicker.jsx:      )}
+src/components/CalendarPicker.jsx:    </div>
+src/components/CalendarPicker.jsx:  );
+src/components/CalendarPicker.jsx:}
+src/App.jsx:// src/App.jsx
+src/App.jsx:import React from 'react';
+src/App.jsx:import { BrowserRouter, Routes, Route } from 'react-router-dom';
+src/App.jsx:import LandingPage from './pages/LandingPage';
+src/App.jsx:import InvitePage from './pages/InvitePage'; // The page wrapper we created earlier
+src/App.jsx:import AdminFinalizeView from './views/AdminFinalizeView';
+src/App.jsx:import "./index.css"; 
+src/App.jsx:export default function App() {
+src/App.jsx:  return (
+src/App.jsx:    <div className="App">
+src/App.jsx:      <BrowserRouter>
+src/App.jsx:        <Routes>
+src/App.jsx:          {/* Default Home view where CreateEventWizard sits */}
+src/App.jsx:          <Route path="/" element={<LandingPage />} />
+src/App.jsx:          
+src/App.jsx:          {/* Regular user link: matches /invite/1b546da5-9814-435f-8385-ac1a40bcebc0 */}
+src/App.jsx:          <Route path="/invite/:token" element={<InvitePage />} />
+src/App.jsx:          
+src/App.jsx:          {/* Admin link: matches /admin/your-admin-token-here */}
+src/App.jsx:          <Route path="/admin/:adminToken" element={<AdminFinalizeView />} />
+src/App.jsx:          
+src/App.jsx:          
+src/App.jsx:        </Routes>
+src/App.jsx:      </BrowserRouter>
+src/App.jsx:    </div>
+src/App.jsx:  );
+src/App.jsx:}
+src/views/LandingView.jsx:import React from 'react';
+src/views/LandingView.jsx:const steps = [
+src/views/LandingView.jsx:  { n: '1', title: 'Ustvari brez prijave', body: 'Klikni gumb, vnesi naslov dogodka in predlagaj datume brez registracije.' },
+src/views/LandingView.jsx:  { n: '2', title: 'Deli povezavo', body: 'Pošlji unikatno vabilo skupini preko tvojega najljubšega klepeta.' },
+src/views/LandingView.jsx:  { n: '3', title: 'Glasujte in razdelite delo', body: 'Udeleženci izberejo termin, sistem pa jih samodejno opomni in doda v koledar.' },
+src/views/LandingView.jsx:];
+src/views/LandingView.jsx:const features = [
+src/views/LandingView.jsx:  { name: 'Group Polls', desc: 'Poiščite idealen termin brez neskončnih sporočil.' },
+src/views/LandingView.jsx:  { name: 'Dodeljevanje nalog', desc: 'Delegirajte zadolžitve neposredno znotraj vabila.' },
+src/views/LandingView.jsx:  { name: 'E-mail opomniki', desc: 'Avtomatska obvestila poskrbijo, da nihče ne pozabi.' },
+src/views/LandingView.jsx:  { name: 'No Login / No Register', desc: 'Hitro, varno in povsem preprosto za vse udeležence.' },
+src/views/LandingView.jsx:];
+src/views/LandingView.jsx:export default function LandingView({ onStartCreating }) {
+src/views/LandingView.jsx:  return (
+src/views/LandingView.jsx:    <div className="max-w-4xl mx-auto px-4 py-12 space-y-16 text-slate-800">
+src/views/LandingView.jsx:      {/* Hero Section */}
+src/views/LandingView.jsx:      <div className="text-center space-y-6 my-12">
+src/views/LandingView.jsx:        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+src/views/LandingView.jsx:          Organizacija dogodkov,<br />
+src/views/LandingView.jsx:          <em className="text-blue-600 not-italic">brez kaosa.</em>
+src/views/LandingView.jsx:        </h1>
+src/views/LandingView.jsx:        <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">
+src/views/LandingView.jsx:          Najpreprostejši način za študentska društva, ekipe in posameznike, da uskladijo termine, razdelijo naloge in spremljajo potrditve udeležbe.
+src/views/LandingView.jsx:        </p>
+src/views/LandingView.jsx:        <div className="pt-4">
+src/views/LandingView.jsx:          <button 
+src/views/LandingView.jsx:            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition cursor-pointer" 
+src/views/LandingView.jsx:            type="button" 
+src/views/LandingView.jsx:            onClick={onStartCreating}
+src/views/LandingView.jsx:          >
+src/views/LandingView.jsx:            Ustvari dogodek — Brezplačno
+src/views/LandingView.jsx:          </button>
+src/views/LandingView.jsx:        </div>
+src/views/LandingView.jsx:      </div>
+src/views/LandingView.jsx:      <hr className="border-slate-200" />
+src/views/LandingView.jsx:      {/* Steps Section */}
+src/views/LandingView.jsx:      <div className="space-y-8">
+src/views/LandingView.jsx:        <h2 className="text-2xl font-bold text-center text-slate-900">Kako deluje</h2>
+src/views/LandingView.jsx:        <div className="grid md:grid-cols-3 gap-8">
+src/views/LandingView.jsx:          {steps.map(s => (
+src/views/LandingView.jsx:            <div className="flex gap-4 items-start p-4 bg-slate-50 rounded-xl" key={s.n}>
+src/views/LandingView.jsx:              <span className="flex items-center justify-center bg-blue-600 text-white font-bold rounded-full h-8 w-8 shrink-0">
+src/views/LandingView.jsx:                {s.n}
+src/views/LandingView.jsx:              </span>
+src/views/LandingView.jsx:              <div className="space-y-1">
+src/views/LandingView.jsx:                <p className="font-semibold text-slate-900">{s.title}</p>
+src/views/LandingView.jsx:                <p className="text-sm text-slate-600">{s.body}</p>
+src/views/LandingView.jsx:              </div>
+src/views/LandingView.jsx:            </div>
+src/views/LandingView.jsx:          ))}
+src/views/LandingView.jsx:        </div>
+src/views/LandingView.jsx:      </div>
+src/views/LandingView.jsx:      <hr className="border-slate-200" />
+src/views/LandingView.jsx:      {/* Features Section */}
+src/views/LandingView.jsx:      <div className="space-y-8">
+src/views/LandingView.jsx:        <h2 className="text-2xl font-bold text-center text-slate-900">Vse kar potrebujete</h2>
+src/views/LandingView.jsx:        <div className="grid sm:grid-cols-2 gap-6">
+src/views/LandingView.jsx:          {features.map(f => (
+src/views/LandingView.jsx:            <div className="p-5 border border-slate-200 rounded-xl hover:shadow-sm transition" key={f.name}>
+src/views/LandingView.jsx:              <span className="block font-bold text-lg text-blue-600 mb-1">{f.name}</span>
+src/views/LandingView.jsx:              <span className="text-sm text-slate-600">{f.desc}</span>
+src/views/LandingView.jsx:            </div>
+src/views/LandingView.jsx:          ))}
+src/views/LandingView.jsx:        </div>
+src/views/LandingView.jsx:      </div>
+src/views/LandingView.jsx:    </div>
+src/views/LandingView.jsx:  );
+src/views/LandingView.jsx:}
+src/pages/InvitePage.jsx:// src/pages/InvitePage.jsx
+src/pages/InvitePage.jsx:import React, { useState, useEffect } from 'react';
+src/pages/InvitePage.jsx:import { useParams } from 'react-router-dom';
+src/pages/InvitePage.jsx:import InviteView from '../views/InviteView';
+src/pages/InvitePage.jsx:export default function InvitePage() {
+src/pages/InvitePage.jsx:  const { token } = useParams(); 
+src/pages/InvitePage.jsx:  const [eventData, setEventData] = useState(null);
+src/pages/InvitePage.jsx:  const [loading, setLoading] = useState(true);
+src/pages/InvitePage.jsx:  const [error, setError] = useState(null);
+src/pages/InvitePage.jsx:  useEffect(() => {
+src/pages/InvitePage.jsx:    async function fetchEvent() {
+src/pages/InvitePage.jsx:      try {
+src/pages/InvitePage.jsx:        const response = await fetch(`/api/polls/share/${token}`);
+src/pages/InvitePage.jsx:        if (!response.ok) {
+src/pages/InvitePage.jsx:          throw new Error('Dogodka ni mogoče najti ali pa je bil izbrisan.');
+src/pages/InvitePage.jsx:        }
+src/pages/InvitePage.jsx:        const data = await response.json();
+src/pages/InvitePage.jsx:        
+src/pages/InvitePage.jsx:        // FIX: Extract exactly the first 10 characters "YYYY-MM-DD" safely,
+src/pages/InvitePage.jsx:        // ignoring whether the backend separates with a space or a 'T'.
+src/pages/InvitePage.jsx:        const formattedSlots = (data.time_slots || []).map(slot => {
+src/pages/InvitePage.jsx:          if (!slot.start_time) return null;
+src/pages/InvitePage.jsx:          
+src/pages/InvitePage.jsx:          // Replaces 'T' or spaces to safely slice out "YYYY-MM-DD"
+src/pages/InvitePage.jsx:          const cleanDate = slot.start_time.replace('T', ' ').split(' ')[0]; 
+src/pages/InvitePage.jsx:          
+src/pages/InvitePage.jsx:          return {
+src/pages/InvitePage.jsx:            id: slot.id,
+src/pages/InvitePage.jsx:            date: cleanDate // Guaranteed to be "2026-05-13"
+src/pages/InvitePage.jsx:          };
+src/pages/InvitePage.jsx:        }).filter(Boolean);
+src/pages/InvitePage.jsx:        setEventData({
+src/pages/InvitePage.jsx:          share_token: token,
+src/pages/InvitePage.jsx:          title: data.title,
+src/pages/InvitePage.jsx:          description: data.description,
+src/pages/InvitePage.jsx:          organizerName: data.organizer_email ? data.organizer_email.split('@')[0] : 'Organizator',
+src/pages/InvitePage.jsx:          suggestedDates: formattedSlots, 
+src/pages/InvitePage.jsx:          tasks: data.tasks || [],
+src/pages/InvitePage.jsx:          votes: data.votes || []
+src/pages/InvitePage.jsx:        });
+src/pages/InvitePage.jsx:      } catch (err) {
+src/pages/InvitePage.jsx:        setError(err.message);
+src/pages/InvitePage.jsx:      } finally {
+src/pages/InvitePage.jsx:        setLoading(false);
+src/pages/InvitePage.jsx:      }
+src/pages/InvitePage.jsx:    }
+src/pages/InvitePage.jsx:    if (token) fetchEvent();
+src/pages/InvitePage.jsx:  }, [token]);
+src/pages/InvitePage.jsx:  if (loading) {
+src/pages/InvitePage.jsx:    return (
+src/pages/InvitePage.jsx:      <div className="flex justify-center items-center min-h-screen text-gray-500 text-sm font-light">
+src/pages/InvitePage.jsx:        Nalagam podatke o dogodku...
+src/pages/InvitePage.jsx:      </div>
+src/pages/InvitePage.jsx:    );
+src/pages/InvitePage.jsx:  }
+src/pages/InvitePage.jsx:  if (error) {
+src/pages/InvitePage.jsx:    return (
+src/pages/InvitePage.jsx:      <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
+src/pages/InvitePage.jsx:        <h2 className="text-xl font-serif text-gray-900 mb-2">Ups! Nekaj je šlo narobe</h2>
+src/pages/InvitePage.jsx:        <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
+src/pages/InvitePage.jsx:      </div>
+src/pages/InvitePage.jsx:    );
+src/pages/InvitePage.jsx:  }
+src/pages/InvitePage.jsx:  return <InviteView eventData={eventData} />;
+src/pages/InvitePage.jsx:}
+src/views/AdminFinalizeView.jsx:import React, { useState, useEffect } from 'react';
+src/views/AdminFinalizeView.jsx:import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+src/views/AdminFinalizeView.jsx:import VoteResults from '../components/VoteResults';
+src/views/AdminFinalizeView.jsx:import CalendarPicker from '../components/CalendarPicker';
+src/views/AdminFinalizeView.jsx:export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
+src/views/AdminFinalizeView.jsx:  const { adminToken } = useParams(); 
+src/views/AdminFinalizeView.jsx:  const [searchParams] = useSearchParams(); 
+src/views/AdminFinalizeView.jsx:  const navigate = useNavigate();
+src/views/AdminFinalizeView.jsx:  
+src/views/AdminFinalizeView.jsx:  const basicToken = searchParams.get('invite');
+src/views/AdminFinalizeView.jsx:  const [eventData, setEventData] = useState(propEventData || null);
+src/views/AdminFinalizeView.jsx:  const [loading, setLoading] = useState(!propEventData);
+src/views/AdminFinalizeView.jsx:  const [error, setError] = useState(null);
+src/views/AdminFinalizeView.jsx:  const [selectedSlotId, setSelectedSlotId] = useState(null);
+src/views/AdminFinalizeView.jsx:  const [isSubmitting, setIsSubmitting] = useState(false);
+src/views/AdminFinalizeView.jsx:  const [suggestions, setSuggestions] = useState([]);
+src/views/AdminFinalizeView.jsx:  const [pendingSuggestion, setPendingSuggestion] = useState(null);
+src/views/AdminFinalizeView.jsx:  useEffect(() => {
+src/views/AdminFinalizeView.jsx:    if (propEventData) {
+src/views/AdminFinalizeView.jsx:      setEventData(propEventData);
+src/views/AdminFinalizeView.jsx:      return;
+src/views/AdminFinalizeView.jsx:    }
+src/views/AdminFinalizeView.jsx:    async function fetchAdminData() {
+src/views/AdminFinalizeView.jsx:      try {
+src/views/AdminFinalizeView.jsx:        if (!basicToken) {
+src/views/AdminFinalizeView.jsx:          throw new Error('Manjka vabilni žeton (?invite=...) v povezavi.');
+src/views/AdminFinalizeView.jsx:        }
+src/views/AdminFinalizeView.jsx:        const response = await fetch(`/api/polls/share/${basicToken}`);
+src/views/AdminFinalizeView.jsx:        if (!response.ok) {
+src/views/AdminFinalizeView.jsx:          throw new Error('Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.');
+src/views/AdminFinalizeView.jsx:        }
+src/views/AdminFinalizeView.jsx:        const data = await response.json();
+src/views/AdminFinalizeView.jsx:        
+src/views/AdminFinalizeView.jsx:        setEventData({
+src/views/AdminFinalizeView.jsx:          title: data.title,
+src/views/AdminFinalizeView.jsx:          description: data.description,
+src/views/AdminFinalizeView.jsx:          suggestedDates: (data.time_slots || []).map(slot => ({
+src/views/AdminFinalizeView.jsx:            id: slot.id,
+src/views/AdminFinalizeView.jsx:            date: slot.start_time.replace('T', ' ').split(' ')[0] 
+src/views/AdminFinalizeView.jsx:          })),
+src/views/AdminFinalizeView.jsx:          votes: data.votes || []
+src/views/AdminFinalizeView.jsx:        });
+src/views/AdminFinalizeView.jsx:        // TODO: replace with real API call when GET /api/polls/admin/{adminToken} is ready
+src/views/AdminFinalizeView.jsx:        // const adminResponse = await fetch(`/api/polls/admin/${adminToken}`);
+src/views/AdminFinalizeView.jsx:        // const adminData = await adminResponse.json();
+src/views/AdminFinalizeView.jsx:        // setSuggestions(adminData.suggestions || []);
+src/views/AdminFinalizeView.jsx:        // Mock suggestions for now
+src/views/AdminFinalizeView.jsx:        setSuggestions([
+src/views/AdminFinalizeView.jsx:          {
+src/views/AdminFinalizeView.jsx:            id: 'mock-1',
+src/views/AdminFinalizeView.jsx:            poll_id: 'mock',
+src/views/AdminFinalizeView.jsx:            suggested_by: 'Janez',
+src/views/AdminFinalizeView.jsx:            start_time: '2026-06-20T00:00:00Z',
+src/views/AdminFinalizeView.jsx:            status: 'pending'
+src/views/AdminFinalizeView.jsx:          },
+src/views/AdminFinalizeView.jsx:          {
+src/views/AdminFinalizeView.jsx:            id: 'mock-2',
+src/views/AdminFinalizeView.jsx:            poll_id: 'mock',
+src/views/AdminFinalizeView.jsx:            suggested_by: 'Ana',
+src/views/AdminFinalizeView.jsx:            start_time: '2026-06-25T00:00:00Z',
+src/views/AdminFinalizeView.jsx:            status: 'pending'
+src/views/AdminFinalizeView.jsx:          }
+src/views/AdminFinalizeView.jsx:        ]);
+src/views/AdminFinalizeView.jsx:      } catch (err) {
+src/views/AdminFinalizeView.jsx:        setError(err.message);
+src/views/AdminFinalizeView.jsx:      } finally {
+src/views/AdminFinalizeView.jsx:        setLoading(false);
+src/views/AdminFinalizeView.jsx:      }
+src/views/AdminFinalizeView.jsx:    }
+src/views/AdminFinalizeView.jsx:    if (basicToken) {
+src/views/AdminFinalizeView.jsx:      fetchAdminData();
+src/views/AdminFinalizeView.jsx:    } else if (!propEventData) {
+src/views/AdminFinalizeView.jsx:      setError('Napačna skrbniška povezava. Manjka identifikator povabila.');
+src/views/AdminFinalizeView.jsx:      setLoading(false);
+src/views/AdminFinalizeView.jsx:    }
+src/views/AdminFinalizeView.jsx:  }, [basicToken, propEventData]);
+src/views/AdminFinalizeView.jsx:  const handleSuggestionAction = async (suggestionId, action) => {
+src/views/AdminFinalizeView.jsx:    // TODO: uncomment when endpoints are ready
+src/views/AdminFinalizeView.jsx:    // await fetch(`/api/polls/admin/${adminToken}/suggestions/${suggestionId}/${action}`, { method: 'POST' });
+src/views/AdminFinalizeView.jsx:    setSuggestions(prev => prev.map(s =>
+src/views/AdminFinalizeView.jsx:      s.id === suggestionId ? { ...s, status: action === 'accept' ? 'accepted' : 'rejected' } : s
+src/views/AdminFinalizeView.jsx:    ));
+src/views/AdminFinalizeView.jsx:    setPendingSuggestion(null);
+src/views/AdminFinalizeView.jsx:  };
+src/views/AdminFinalizeView.jsx:  if (loading) {
+src/views/AdminFinalizeView.jsx:    return (
+src/views/AdminFinalizeView.jsx:      <div className="flex justify-center items-center min-h-screen text-gray-500 text-sm font-light">
+src/views/AdminFinalizeView.jsx:        Nalagam administratorske podatke...
+src/views/AdminFinalizeView.jsx:      </div>
+src/views/AdminFinalizeView.jsx:    );
+src/views/AdminFinalizeView.jsx:  }
+src/views/AdminFinalizeView.jsx:  if (error) {
+src/views/AdminFinalizeView.jsx:    return (
+src/views/AdminFinalizeView.jsx:      <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
+src/views/AdminFinalizeView.jsx:        <h2 className="text-xl font-serif text-gray-900 mb-2">Napaka pri dostopu</h2>
+src/views/AdminFinalizeView.jsx:        <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
+src/views/AdminFinalizeView.jsx:      </div>
+src/views/AdminFinalizeView.jsx:    );
+src/views/AdminFinalizeView.jsx:  }
+src/views/AdminFinalizeView.jsx:  const { title, description, suggestedDates = [], votes = [] } = eventData;
+src/views/AdminFinalizeView.jsx:  const handleFinalize = async (e) => {
+src/views/AdminFinalizeView.jsx:    e.preventDefault();
+src/views/AdminFinalizeView.jsx:    if (!adminToken) return alert('Nimate skrbniških pravic za zaključek tega dogodka.');
+src/views/AdminFinalizeView.jsx:    if (!selectedSlotId) return alert('Prosimo, izberite končni termin za zaklep dogodka.');
+src/views/AdminFinalizeView.jsx:    setIsSubmitting(true);
+src/views/AdminFinalizeView.jsx:    try {
+src/views/AdminFinalizeView.jsx:      const response = await fetch(`/api/polls/admin/${adminToken}/finalize`, {
+src/views/AdminFinalizeView.jsx:        method: 'POST',
+src/views/AdminFinalizeView.jsx:        headers: { 'Content-Type': 'application/json' },
+src/views/AdminFinalizeView.jsx:        body: JSON.stringify({ final_slot_id: selectedSlotId })
+src/views/AdminFinalizeView.jsx:      });
+src/views/AdminFinalizeView.jsx:      if (response.ok) {
+src/views/AdminFinalizeView.jsx:        alert('Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko.');
+src/views/AdminFinalizeView.jsx:        navigate('/'); 
+src/views/AdminFinalizeView.jsx:      } else {
+src/views/AdminFinalizeView.jsx:        alert('Napaka na strežniku pri zaključevanju glasovanja.');
+src/views/AdminFinalizeView.jsx:      }
+src/views/AdminFinalizeView.jsx:    } catch (error) {
+src/views/AdminFinalizeView.jsx:      console.error("Napaka pri zaključevanju polla:", error);
+src/views/AdminFinalizeView.jsx:      alert('Omrežna napaka pri zaključevanju.');
+src/views/AdminFinalizeView.jsx:    } finally {
+src/views/AdminFinalizeView.jsx:      setIsSubmitting(false);
+src/views/AdminFinalizeView.jsx:    }
+src/views/AdminFinalizeView.jsx:  };
+src/views/AdminFinalizeView.jsx:  const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
+src/views/AdminFinalizeView.jsx:  return (
+src/views/AdminFinalizeView.jsx:    <div className="py-12 md:py-16 px-4 max-w-2xl mx-auto">
+src/views/AdminFinalizeView.jsx:      <div className="mb-8 border-b border-gray-100 pb-6">
+src/views/AdminFinalizeView.jsx:        {onBack && (
+src/views/AdminFinalizeView.jsx:          <button onClick={onBack} className="text-xs text-gray-500 hover:text-black mb-4 flex items-center gap-1 transition">
+src/views/AdminFinalizeView.jsx:            ← Nazaj
+src/views/AdminFinalizeView.jsx:          </button>
+src/views/AdminFinalizeView.jsx:        )}
+src/views/AdminFinalizeView.jsx:        <div className="flex items-center gap-2 mb-1">
+src/views/AdminFinalizeView.jsx:          <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase tracking-wider">
+src/views/AdminFinalizeView.jsx:            Skrbniški pogled (Admin)
+src/views/AdminFinalizeView.jsx:          </span>
+src/views/AdminFinalizeView.jsx:        </div>
+src/views/AdminFinalizeView.jsx:        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">{title}</h1>
+src/views/AdminFinalizeView.jsx:        {description && (
+src/views/AdminFinalizeView.jsx:          <p className="text-sm text-gray-600 font-light mt-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+src/views/AdminFinalizeView.jsx:            {description}
+src/views/AdminFinalizeView.jsx:          </p>
+src/views/AdminFinalizeView.jsx:        )}
+src/views/AdminFinalizeView.jsx:      </div>
+src/views/AdminFinalizeView.jsx:      {/* Suggestions section */}
+src/views/AdminFinalizeView.jsx:      {pendingSuggestions.length > 0 && (
+src/views/AdminFinalizeView.jsx:        <div className="mb-8 border border-blue-100 bg-blue-50 rounded-xl p-4">
+src/views/AdminFinalizeView.jsx:          <h2 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-1">
+src/views/AdminFinalizeView.jsx:            Predlogi datumov udeležencev
+src/views/AdminFinalizeView.jsx:          </h2>
+src/views/AdminFinalizeView.jsx:          <p className="text-xs text-blue-600 font-light mb-3">
+src/views/AdminFinalizeView.jsx:            Modro označeni datumi so predlogi udeležencev. Kliknite na datum za sprejem ali zavrnitev.
+src/views/AdminFinalizeView.jsx:          </p>
+src/views/AdminFinalizeView.jsx:          <CalendarPicker
+src/views/AdminFinalizeView.jsx:            suggestions={pendingSuggestions.map(s => ({
+src/views/AdminFinalizeView.jsx:              id: s.id,
+src/views/AdminFinalizeView.jsx:              date: s.start_time.split('T')[0],
+src/views/AdminFinalizeView.jsx:              suggested_by: s.suggested_by
+src/views/AdminFinalizeView.jsx:            }))}
+src/views/AdminFinalizeView.jsx:            onSuggestionSelect={(date, dateSuggestions) => setPendingSuggestion(dateSuggestions[0])}
+src/views/AdminFinalizeView.jsx:          />
+src/views/AdminFinalizeView.jsx:          {pendingSuggestion && (
+src/views/AdminFinalizeView.jsx:            <div className="mt-3 p-3 bg-white border border-blue-200 rounded-lg">
+src/views/AdminFinalizeView.jsx:              <p className="text-sm text-gray-800 mb-2">
+src/views/AdminFinalizeView.jsx:                Predlog od <strong>{pendingSuggestion.suggested_by}</strong>: {pendingSuggestion.date}
+src/views/AdminFinalizeView.jsx:              </p>
+src/views/AdminFinalizeView.jsx:              <div className="flex gap-2">
+src/views/AdminFinalizeView.jsx:                <button
+src/views/AdminFinalizeView.jsx:                  type="button"
+src/views/AdminFinalizeView.jsx:                  onClick={() => handleSuggestionAction(pendingSuggestion.id, 'accept')}
+src/views/AdminFinalizeView.jsx:                  className="text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition"
+src/views/AdminFinalizeView.jsx:                >
+src/views/AdminFinalizeView.jsx:                  Sprejmi → dodaj v poll
+src/views/AdminFinalizeView.jsx:                </button>
+src/views/AdminFinalizeView.jsx:                <button
+src/views/AdminFinalizeView.jsx:                  type="button"
+src/views/AdminFinalizeView.jsx:                  onClick={() => handleSuggestionAction(pendingSuggestion.id, 'reject')}
+src/views/AdminFinalizeView.jsx:                  className="text-xs text-gray-700 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-md transition"
+src/views/AdminFinalizeView.jsx:                >
+src/views/AdminFinalizeView.jsx:                  Zavrni
+src/views/AdminFinalizeView.jsx:                </button>
+src/views/AdminFinalizeView.jsx:                <button
+src/views/AdminFinalizeView.jsx:                  type="button"
+src/views/AdminFinalizeView.jsx:                  onClick={() => setPendingSuggestion(null)}
+src/views/AdminFinalizeView.jsx:                  className="text-xs text-gray-400 hover:text-gray-600 px-2 transition"
+src/views/AdminFinalizeView.jsx:                >
+src/views/AdminFinalizeView.jsx:                  ✕
+src/views/AdminFinalizeView.jsx:                </button>
+src/views/AdminFinalizeView.jsx:              </div>
+src/views/AdminFinalizeView.jsx:            </div>
+src/views/AdminFinalizeView.jsx:          )}
+src/views/AdminFinalizeView.jsx:        </div>
+src/views/AdminFinalizeView.jsx:      )}
+src/views/AdminFinalizeView.jsx:      <form onSubmit={handleFinalize} className="space-y-6">
+src/views/AdminFinalizeView.jsx:        <div>
+src/views/AdminFinalizeView.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider block mb-1">
+src/views/AdminFinalizeView.jsx:            Trenutni rezultati glasovanja
+src/views/AdminFinalizeView.jsx:          </label>
+src/views/AdminFinalizeView.jsx:          <p className="text-xs text-gray-400 font-light mb-3">
+src/views/AdminFinalizeView.jsx:            Preglejte odgovore oddane s strani uporabnikov in izberite končni potrjen termin za ta dogodek.
+src/views/AdminFinalizeView.jsx:          </p>
+src/views/AdminFinalizeView.jsx:        </div>
+src/views/AdminFinalizeView.jsx:        <div className="space-y-3">
+src/views/AdminFinalizeView.jsx:          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+src/views/AdminFinalizeView.jsx:            Izberite končni termin:
+src/views/AdminFinalizeView.jsx:          </label>
+src/views/AdminFinalizeView.jsx:          <div className="space-y-2">
+src/views/AdminFinalizeView.jsx:            {suggestedDates.map((slot) => {
+src/views/AdminFinalizeView.jsx:              const isChecked = selectedSlotId === slot.id;
+src/views/AdminFinalizeView.jsx:              return (
+src/views/AdminFinalizeView.jsx:                <div 
+src/views/AdminFinalizeView.jsx:                  key={slot.id} 
+src/views/AdminFinalizeView.jsx:                  className={`flex items-start gap-3 p-2 rounded-xl transition-colors ${
+src/views/AdminFinalizeView.jsx:                    isChecked ? 'bg-amber-50/60 ring-1 ring-amber-200' : 'hover:bg-gray-50'
+src/views/AdminFinalizeView.jsx:                  }`}
+src/views/AdminFinalizeView.jsx:                >
+src/views/AdminFinalizeView.jsx:                  <div className="pt-4 pl-2">
+src/views/AdminFinalizeView.jsx:                    <input 
+src/views/AdminFinalizeView.jsx:                      type="radio" 
+src/views/AdminFinalizeView.jsx:                      name="admin-finalize-slot" 
+src/views/AdminFinalizeView.jsx:                      className="w-5 h-5 border-gray-300 text-amber-600 focus:ring-amber-500 accent-amber-600 cursor-pointer"
+src/views/AdminFinalizeView.jsx:                      checked={isChecked}
+src/views/AdminFinalizeView.jsx:                      onChange={() => setSelectedSlotId(slot.id)}
+src/views/AdminFinalizeView.jsx:                    />
+src/views/AdminFinalizeView.jsx:                  </div>
+src/views/AdminFinalizeView.jsx:                  <div className="flex-1 pointer-events-none">
+src/views/AdminFinalizeView.jsx:                    <VoteResults 
+src/views/AdminFinalizeView.jsx:                      suggestedDates={[slot]} 
+src/views/AdminFinalizeView.jsx:                      votes={votes} 
+src/views/AdminFinalizeView.jsx:                    />
+src/views/AdminFinalizeView.jsx:                  </div>
+src/views/AdminFinalizeView.jsx:                </div>
+src/views/AdminFinalizeView.jsx:              );
+src/views/AdminFinalizeView.jsx:            })}
+src/views/AdminFinalizeView.jsx:          </div>
+src/views/AdminFinalizeView.jsx:        </div>
+src/views/AdminFinalizeView.jsx:        <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs rounded-lg p-3 font-light leading-relaxed">
+src/views/AdminFinalizeView.jsx:          <strong>Opozorilo:</strong> Izbira in potrditev termina bosta trajno zaključili glasovanje. Sistem bo samodejno poslal obvestila z datoteko koledarja vsem prijavljenim udeležencem.
+src/views/AdminFinalizeView.jsx:        </div>
+src/views/AdminFinalizeView.jsx:        <div className="pt-2">
+src/views/AdminFinalizeView.jsx:          <button 
+src/views/AdminFinalizeView.jsx:            type="submit" 
+src/views/AdminFinalizeView.jsx:            disabled={isSubmitting}
+src/views/AdminFinalizeView.jsx:            className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 disabled:bg-gray-400 disabled:scale-100 transition shadow-sm"
+src/views/AdminFinalizeView.jsx:          >
+src/views/AdminFinalizeView.jsx:            {isSubmitting ? 'Zaklujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
+src/views/AdminFinalizeView.jsx:          </button>
+src/views/AdminFinalizeView.jsx:        </div>
+src/views/AdminFinalizeView.jsx:      </form>
+src/views/AdminFinalizeView.jsx:    </div>
+src/views/AdminFinalizeView.jsx:  );
+src/views/AdminFinalizeView.jsx:}
+src/views/InviteView.jsx:import React, { useState } from "react";
+src/views/InviteView.jsx:import CalendarPicker from "../components/CalendarPicker";
+src/views/InviteView.jsx:import VoteResults from "../components/VoteResults";
+src/views/InviteView.jsx:export default function InviteView({ eventData }) {
+src/views/InviteView.jsx:  const [guestName, setGuestName] = useState("");
+src/views/InviteView.jsx:  const [isSubmitted, setIsSubmitted] = useState(false);
+src/views/InviteView.jsx:  const [dateVotes, setDateVotes] = useState({});
+src/views/InviteView.jsx:  const [claimedTasks, setClaimedTasks] = useState([]);
+src/views/InviteView.jsx:  const [showNoDatePopup, setShowNoDatePopup] = useState(false);
+src/views/InviteView.jsx:  const {
+src/views/InviteView.jsx:    title,
+src/views/InviteView.jsx:    description,
+src/views/InviteView.jsx:    suggestedDates,
+src/views/InviteView.jsx:    tasks,
+src/views/InviteView.jsx:    organizerName,
+src/views/InviteView.jsx:    share_token,
+src/views/InviteView.jsx:    votes = [],
+src/views/InviteView.jsx:  } = eventData;
+src/views/InviteView.jsx:  const [resultsVisible, setResultsVisible] = useState(false);
+src/views/InviteView.jsx:  const [resultsLoading, setResultsLoading] = useState(false);
+src/views/InviteView.jsx:  const [resultsError, setResultsError] = useState("");
+src/views/InviteView.jsx:  const [resultsData, setResultsData] = useState(() => ({
+src/views/InviteView.jsx:    suggestedDates: suggestedDates || [],
+src/views/InviteView.jsx:    votes,
+src/views/InviteView.jsx:  }));
+src/views/InviteView.jsx:  const [showSuggestModal, setShowSuggestModal] = useState(false);
+src/views/InviteView.jsx:  const [suggestionDates, setSuggestionDates] = useState([]);
+src/views/InviteView.jsx:  const [isSuggesting, setIsSuggesting] = useState(false);
+src/views/InviteView.jsx:  const toggleTask = (taskName) => {
+src/views/InviteView.jsx:    setClaimedTasks((prev) =>
+src/views/InviteView.jsx:      prev.includes(taskName)
+src/views/InviteView.jsx:        ? prev.filter((t) => t !== taskName)
+src/views/InviteView.jsx:        : [...prev, taskName],
+src/views/InviteView.jsx:    );
+src/views/InviteView.jsx:  };
+src/views/InviteView.jsx:  const handleSubmitSuggestion = async () => {
+src/views/InviteView.jsx:    if (!guestName.trim()) return alert("Najprej vpišite svoje ime v obrazec.");
+src/views/InviteView.jsx:    if (suggestionDates.length === 0) return alert("Izberite vsaj en datum.");
+src/views/InviteView.jsx:    setIsSuggesting(true);
+src/views/InviteView.jsx:    try {
+src/views/InviteView.jsx:      const response = await fetch(`/api/polls/share/${share_token}/suggest`, {
+src/views/InviteView.jsx:        method: "POST",
+src/views/InviteView.jsx:        headers: { "Content-Type": "application/json" },
+src/views/InviteView.jsx:        body: JSON.stringify({
+src/views/InviteView.jsx:          suggested_by: guestName.trim(),
+src/views/InviteView.jsx:          dates: suggestionDates,
+src/views/InviteView.jsx:        }),
+src/views/InviteView.jsx:      });
+src/views/InviteView.jsx:      if (response.ok) {
+src/views/InviteView.jsx:        setShowSuggestModal(false);
+src/views/InviteView.jsx:        setSuggestionDates([]);
+src/views/InviteView.jsx:        alert("Predlogi uspešno poslani organizatorju.");
+src/views/InviteView.jsx:      } else {
+src/views/InviteView.jsx:        alert("Napaka pri pošiljanju predlogov.");
+src/views/InviteView.jsx:      }
+src/views/InviteView.jsx:    } catch (e) {
+src/views/InviteView.jsx:      alert("Omrežna napaka.");
+src/views/InviteView.jsx:    } finally {
+src/views/InviteView.jsx:      setIsSuggesting(false);
+src/views/InviteView.jsx:    }
+src/views/InviteView.jsx:  };
+src/views/InviteView.jsx:  const handleSubmit = async (e) => {
+src/views/InviteView.jsx:    e.preventDefault();
+src/views/InviteView.jsx:    if (!guestName.trim()) return alert("Vpišite ime.");
+src/views/InviteView.jsx:    const selectedDates = Object.keys(dateVotes).filter(
+src/views/InviteView.jsx:      (dateStr) => dateVotes[dateStr],
+src/views/InviteView.jsx:    );
+src/views/InviteView.jsx:    if (selectedDates.length === 0) return setShowNoDatePopup(true);
+src/views/InviteView.jsx:    const formattedVotes = suggestedDates.map((slot) => ({
+src/views/InviteView.jsx:      slot_id: slot.id,
+src/views/InviteView.jsx:      status:
+src/views/InviteView.jsx:        dateVotes[slot.date] === "if_needed"
+src/views/InviteView.jsx:          ? "if_need_be"
+src/views/InviteView.jsx:          : dateVotes[slot.date] === "yes"
+src/views/InviteView.jsx:            ? "yes"
+src/views/InviteView.jsx:            : "no",
+src/views/InviteView.jsx:    }));
+src/views/InviteView.jsx:    try {
+src/views/InviteView.jsx:      const response = await fetch(`/api/polls/share/${share_token}/vote`, {
+src/views/InviteView.jsx:        method: "POST",
+src/views/InviteView.jsx:        headers: { "Content-Type": "application/json" },
+src/views/InviteView.jsx:        body: JSON.stringify({
+src/views/InviteView.jsx:          participant_name: guestName.trim(),
+src/views/InviteView.jsx:          date_votes: formattedVotes,
+src/views/InviteView.jsx:          claimed_tasks: claimedTasks,
+src/views/InviteView.jsx:        }),
+src/views/InviteView.jsx:      });
+src/views/InviteView.jsx:      if (response.ok) {
+src/views/InviteView.jsx:        setIsSubmitted(true);
+src/views/InviteView.jsx:      } else {
+src/views/InviteView.jsx:        alert("Napaka pri oddaji glasu na strežniku.");
+src/views/InviteView.jsx:      }
+src/views/InviteView.jsx:    } catch (error) {
+src/views/InviteView.jsx:      console.error("Napaka pri oddaji glasu:", error);
+src/views/InviteView.jsx:    }
+src/views/InviteView.jsx:  };
+src/views/InviteView.jsx:  const fetchResults = async () => {
+src/views/InviteView.jsx:    try {
+src/views/InviteView.jsx:      setResultsError("");
+src/views/InviteView.jsx:      setResultsLoading(true);
+src/views/InviteView.jsx:      const response = await fetch(`/api/polls/share/${share_token}`);
+src/views/InviteView.jsx:      if (!response.ok) {
+src/views/InviteView.jsx:        throw new Error("Rezultatov ni mogoče pridobiti. Poskusite znova.");
+src/views/InviteView.jsx:      }
+src/views/InviteView.jsx:      const data = await response.json();
+src/views/InviteView.jsx:      const formattedSlots = (data.time_slots || [])
+src/views/InviteView.jsx:        .map((slot) => {
+src/views/InviteView.jsx:          if (!slot.start_time) return null;
+src/views/InviteView.jsx:          const cleanDate = slot.start_time.replace("T", " ").split(" ")[0];
+src/views/InviteView.jsx:          return { id: slot.id, date: cleanDate };
+src/views/InviteView.jsx:        })
+src/views/InviteView.jsx:        .filter(Boolean);
+src/views/InviteView.jsx:      if (!Array.isArray(data.votes)) {
+src/views/InviteView.jsx:        setResultsError("Backend ne vraca glasov. Preverite API odgovor.");
+src/views/InviteView.jsx:      }
+src/views/InviteView.jsx:      setResultsData({
+src/views/InviteView.jsx:        suggestedDates: formattedSlots,
+src/views/InviteView.jsx:        votes: Array.isArray(data.votes) ? data.votes : [],
+src/views/InviteView.jsx:      });
+src/views/InviteView.jsx:    } catch (error) {
+src/views/InviteView.jsx:      setResultsError(error.message || "Napaka pri nalaganju rezultatov.");
+src/views/InviteView.jsx:    } finally {
+src/views/InviteView.jsx:      setResultsLoading(false);
+src/views/InviteView.jsx:    }
+src/views/InviteView.jsx:  };
+src/views/InviteView.jsx:  const handleToggleResults = async () => {
+src/views/InviteView.jsx:    if (resultsVisible) {
+src/views/InviteView.jsx:      setResultsVisible(false);
+src/views/InviteView.jsx:      return;
+src/views/InviteView.jsx:    }
+src/views/InviteView.jsx:    setResultsVisible(true);
+src/views/InviteView.jsx:    await fetchResults();
+src/views/InviteView.jsx:  };
+src/views/InviteView.jsx:  if (isSubmitted) {
+src/views/InviteView.jsx:    return (
+src/views/InviteView.jsx:      <div className="flex flex-col justify-center items-center min-h-[60vh] text-center px-4 bg-white max-w-xl mx-auto py-12">
+src/views/InviteView.jsx:        <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-5 text-xl font-bold">
+src/views/InviteView.jsx:          ✓
+src/views/InviteView.jsx:        </div>
+src/views/InviteView.jsx:        <h1 className="font-serif text-3xl font-normal text-gray-950 mb-3">
+src/views/InviteView.jsx:          Hvala, {guestName}!
+src/views/InviteView.jsx:        </h1>
+src/views/InviteView.jsx:        <p className="text-sm text-gray-600 max-w-sm font-light leading-relaxed mb-6">
+src/views/InviteView.jsx:          Vaša prisotnost in izbrani termini za dogodek{" "}
+src/views/InviteView.jsx:          <span className="font-medium text-gray-900">"{title}"</span> so
+src/views/InviteView.jsx:          uspešno zabeleženi. Ko organizator zaključi glasovanje, boste prejeli
+src/views/InviteView.jsx:          obvestilo.
+src/views/InviteView.jsx:        </p>
+src/views/InviteView.jsx:        <div className="flex flex-col items-center gap-3">
+src/views/InviteView.jsx:          <button
+src/views/InviteView.jsx:            onClick={handleToggleResults}
+src/views/InviteView.jsx:            className="text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-md shadow-sm transition"
+src/views/InviteView.jsx:          >
+src/views/InviteView.jsx:            {resultsVisible
+src/views/InviteView.jsx:              ? "Skrij rezultate glasovanja"
+src/views/InviteView.jsx:              : "Prikazi trenutne rezultate glasovanja"}
+src/views/InviteView.jsx:          </button>
+src/views/InviteView.jsx:          <button
+src/views/InviteView.jsx:            onClick={() => setIsSubmitted(false)}
+src/views/InviteView.jsx:            className="text-xs font-medium text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:text-gray-900 px-4 py-2 rounded-md transition"
+src/views/InviteView.jsx:          >
+src/views/InviteView.jsx:            Spremeni moje odgovore
+src/views/InviteView.jsx:          </button>
+src/views/InviteView.jsx:        </div>
+src/views/InviteView.jsx:        {resultsVisible && (
+src/views/InviteView.jsx:          <div className="w-full mt-6">
+src/views/InviteView.jsx:            {resultsLoading && (
+src/views/InviteView.jsx:              <p className="text-xs text-gray-500 font-light">
+src/views/InviteView.jsx:                Nalagam rezultate...
+src/views/InviteView.jsx:              </p>
+src/views/InviteView.jsx:            )}
+src/views/InviteView.jsx:            {!resultsLoading && resultsError && (
+src/views/InviteView.jsx:              <p className="text-xs text-red-500 font-light">{resultsError}</p>
+src/views/InviteView.jsx:            )}
+src/views/InviteView.jsx:            {!resultsLoading && !resultsError && (
+src/views/InviteView.jsx:              <VoteResults
+src/views/InviteView.jsx:                suggestedDates={resultsData.suggestedDates}
+src/views/InviteView.jsx:                votes={resultsData.votes}
+src/views/InviteView.jsx:              />
+src/views/InviteView.jsx:            )}
+src/views/InviteView.jsx:          </div>
+src/views/InviteView.jsx:        )}
+src/views/InviteView.jsx:      </div>
+src/views/InviteView.jsx:    );
+src/views/InviteView.jsx:  }
+src/views/InviteView.jsx:  const plainDisplayDates = suggestedDates.map((slot) => slot.date);
+src/views/InviteView.jsx:  return (
+src/views/InviteView.jsx:    <div className="py-12 md:py-16 px-4 max-w-xl mx-auto">
+src/views/InviteView.jsx:      <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 py-1 px-2.5 rounded-full mb-4">
+src/views/InviteView.jsx:        {organizerName || "Organizator"} vas vabi!
+src/views/InviteView.jsx:      </span>
+src/views/InviteView.jsx:      <div className="mb-8">
+src/views/InviteView.jsx:        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">
+src/views/InviteView.jsx:          {title}
+src/views/InviteView.jsx:        </h1>
+src/views/InviteView.jsx:        <p className="text-gray-600 font-light leading-relaxed">
+src/views/InviteView.jsx:          {description || "Ni opisa."}
+src/views/InviteView.jsx:        </p>
+src/views/InviteView.jsx:      </div>
+src/views/InviteView.jsx:      <form onSubmit={handleSubmit} className="space-y-8">
+src/views/InviteView.jsx:        <div className="flex flex-col gap-1.5">
+src/views/InviteView.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+src/views/InviteView.jsx:            Tvoje ime
+src/views/InviteView.jsx:          </label>
+src/views/InviteView.jsx:          <input
+src/views/InviteView.jsx:            type="text"
+src/views/InviteView.jsx:            className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm"
+src/views/InviteView.jsx:            placeholder="Vpiši svoje ime..."
+src/views/InviteView.jsx:            value={guestName}
+src/views/InviteView.jsx:            onChange={(e) => setGuestName(e.target.value)}
+src/views/InviteView.jsx:            required
+src/views/InviteView.jsx:          />
+src/views/InviteView.jsx:        </div>
+src/views/InviteView.jsx:        <div className="flex flex-col gap-1.5">
+src/views/InviteView.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+src/views/InviteView.jsx:            Kateri termini ti ustrezajo?
+src/views/InviteView.jsx:          </label>
+src/views/InviteView.jsx:          <CalendarPicker
+src/views/InviteView.jsx:            dateStatuses={dateVotes}
+src/views/InviteView.jsx:            onDateStatusesChange={setDateVotes}
+src/views/InviteView.jsx:            isPollMode={true}
+src/views/InviteView.jsx:            allowedDates={plainDisplayDates}
+src/views/InviteView.jsx:          />
+src/views/InviteView.jsx:        </div>
+src/views/InviteView.jsx:        {tasks && tasks.length > 0 && (
+src/views/InviteView.jsx:          <div className="flex flex-col gap-1.5">
+src/views/InviteView.jsx:            <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+src/views/InviteView.jsx:              Pomoč pri organizaciji (izbirno)
+src/views/InviteView.jsx:            </label>
+src/views/InviteView.jsx:            <div className="flex flex-col gap-2 mt-1">
+src/views/InviteView.jsx:              {tasks.map((task) => {
+src/views/InviteView.jsx:                const isClaimed = claimedTasks.includes(task);
+src/views/InviteView.jsx:                return (
+src/views/InviteView.jsx:                  <div
+src/views/InviteView.jsx:                    key={task}
+src/views/InviteView.jsx:                    className={`flex items-center justify-between p-4 border rounded-xl transition duration-150 ${isClaimed ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-gray-50 border-gray-200 text-gray-800"}`}
+src/views/InviteView.jsx:                  >
+src/views/InviteView.jsx:                    <div className="flex flex-col">
+src/views/InviteView.jsx:                      <span className={`text-sm font-medium ${isClaimed ? "line-through opacity-70" : ""}`}>
+src/views/InviteView.jsx:                        {task}
+src/views/InviteView.jsx:                      </span>
+src/views/InviteView.jsx:                      <span className="text-xs opacity-60 mt-0.5">
+src/views/InviteView.jsx:                        {isClaimed ? `Prevzel/a: ${guestName}` : "Na voljo"}
+src/views/InviteView.jsx:                      </span>
+src/views/InviteView.jsx:                    </div>
+src/views/InviteView.jsx:                    <button
+src/views/InviteView.jsx:                      type="button"
+src/views/InviteView.jsx:                      className={`text-xs font-medium py-1.5 px-3 rounded transition ${isClaimed ? "bg-emerald-800 text-white" : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"}`}
+src/views/InviteView.jsx:                      onClick={() => toggleTask(task)}
+src/views/InviteView.jsx:                    >
+src/views/InviteView.jsx:                      {isClaimed ? "Izpusti" : "Prevzemi"}
+src/views/InviteView.jsx:                    </button>
+src/views/InviteView.jsx:                  </div>
+src/views/InviteView.jsx:                );
+src/views/InviteView.jsx:              })}
+src/views/InviteView.jsx:            </div>
+src/views/InviteView.jsx:          </div>
+src/views/InviteView.jsx:        )}
+src/views/InviteView.jsx:        <button
+src/views/InviteView.jsx:          type="submit"
+src/views/InviteView.jsx:          className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 transition shadow-sm"
+src/views/InviteView.jsx:        >
+src/views/InviteView.jsx:          Potrdi udeležbo
+src/views/InviteView.jsx:        </button>
+src/views/InviteView.jsx:        <button
+src/views/InviteView.jsx:          type="button"
+src/views/InviteView.jsx:          onClick={() => setShowSuggestModal(true)}
+src/views/InviteView.jsx:          className="w-full text-sm text-blue-700 font-medium bg-blue-50 border border-blue-200 py-3 px-5 rounded-md hover:bg-blue-100 transition"
+src/views/InviteView.jsx:        >
+src/views/InviteView.jsx:          Predlagaj nov datum
+src/views/InviteView.jsx:        </button>
+src/views/InviteView.jsx:      </form>
+src/views/InviteView.jsx:      {showNoDatePopup && (
+src/views/InviteView.jsx:        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+src/views/InviteView.jsx:          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl border border-gray-200">
+src/views/InviteView.jsx:            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+src/views/InviteView.jsx:              Izberite termin
+src/views/InviteView.jsx:            </h2>
+src/views/InviteView.jsx:            <p className="text-sm text-gray-600">
+src/views/InviteView.jsx:              Pred potrditvijo udeležbe izberite vsaj en datum.
+src/views/InviteView.jsx:            </p>
+src/views/InviteView.jsx:            <div className="mt-5 flex justify-end">
+src/views/InviteView.jsx:              <button
+src/views/InviteView.jsx:                type="button"
+src/views/InviteView.jsx:                className="text-sm text-white font-medium bg-black py-2 px-4 rounded-md hover:bg-gray-800 transition"
+src/views/InviteView.jsx:                onClick={() => setShowNoDatePopup(false)}
+src/views/InviteView.jsx:              >
+src/views/InviteView.jsx:                V redu
+src/views/InviteView.jsx:              </button>
+src/views/InviteView.jsx:            </div>
+src/views/InviteView.jsx:          </div>
+src/views/InviteView.jsx:        </div>
+src/views/InviteView.jsx:      )}
+src/views/InviteView.jsx:      {showSuggestModal && (
+src/views/InviteView.jsx:        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+src/views/InviteView.jsx:          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl border border-gray-200">
+src/views/InviteView.jsx:            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+src/views/InviteView.jsx:              Predlagaj datum
+src/views/InviteView.jsx:            </h2>
+src/views/InviteView.jsx:            <p className="text-xs text-gray-500 font-light mb-4">
+src/views/InviteView.jsx:              Izberite datume ki bi vam ustrezali. Organizator jih bo pregledal.
+src/views/InviteView.jsx:            </p>
+src/views/InviteView.jsx:            <CalendarPicker
+src/views/InviteView.jsx:              selectedDates={suggestionDates}
+src/views/InviteView.jsx:              onChange={setSuggestionDates}
+src/views/InviteView.jsx:              isPollMode={false}
+src/views/InviteView.jsx:            />
+src/views/InviteView.jsx:            <div className="mt-4 flex gap-2">
+src/views/InviteView.jsx:              <button
+src/views/InviteView.jsx:                type="button"
+src/views/InviteView.jsx:                onClick={() => setShowSuggestModal(false)}
+src/views/InviteView.jsx:                className="flex-1 text-sm text-gray-700 bg-white border border-gray-200 py-2 px-4 rounded-md hover:border-gray-300 transition"
+src/views/InviteView.jsx:              >
+src/views/InviteView.jsx:                Prekliči
+src/views/InviteView.jsx:              </button>
+src/views/InviteView.jsx:              <button
+src/views/InviteView.jsx:                type="button"
+src/views/InviteView.jsx:                onClick={handleSubmitSuggestion}
+src/views/InviteView.jsx:                disabled={isSuggesting}
+src/views/InviteView.jsx:                className="flex-1 text-sm text-white font-medium bg-black py-2 px-4 rounded-md hover:bg-gray-800 disabled:bg-gray-400 transition"
+src/views/InviteView.jsx:              >
+src/views/InviteView.jsx:                {isSuggesting ? "Pošiljam..." : "Pošlji predlog"}
+src/views/InviteView.jsx:              </button>
+src/views/InviteView.jsx:            </div>
+src/views/InviteView.jsx:          </div>
+src/views/InviteView.jsx:        </div>
+src/views/InviteView.jsx:      )}
+src/views/InviteView.jsx:    </div>
+src/views/InviteView.jsx:  );
+src/views/InviteView.jsx:}
+src/pages/CreateEventPage.jsx:import React, { useState } from 'react';
+src/pages/CreateEventPage.jsx:import CalendarPicker from '../components/CalendarPicker';
+src/pages/CreateEventPage.jsx:export default function CreateEventWizard({ onCancel, onCreate }) {
+src/pages/CreateEventPage.jsx:  const [formData, setFormData] = useState({ title: '', description: '', organizer_email: '', tasks: '' });
+src/pages/CreateEventPage.jsx:  const [pollDates, setPollDates] = useState([]);
+src/pages/CreateEventPage.jsx:  
+src/pages/CreateEventPage.jsx:  // States to hold the generated links and handle clipboard feedback
+src/pages/CreateEventPage.jsx:  const [adminLink, setAdminLink] = useState('');
+src/pages/CreateEventPage.jsx:  const [shareLink, setShareLink] = useState('');
+src/pages/CreateEventPage.jsx:  const [copiedAdmin, setCopiedAdmin] = useState(false);
+src/pages/CreateEventPage.jsx:  const [copiedShare, setCopiedShare] = useState(false);
+src/pages/CreateEventPage.jsx:  const handleChange = (e) => {
+src/pages/CreateEventPage.jsx:    const { name, value } = e.target;
+src/pages/CreateEventPage.jsx:    setFormData(prev => ({ ...prev, [name]: value }));
+src/pages/CreateEventPage.jsx:  };
+src/pages/CreateEventPage.jsx:  const handleSubmit = async (e) => {
+src/pages/CreateEventPage.jsx:    e.preventDefault();
+src/pages/CreateEventPage.jsx:    if (!formData.title) return alert('Prosimo, vnesite naslov dogodka.');
+src/pages/CreateEventPage.jsx:    if (!formData.organizer_email) return alert('Prosimo, vnesite e-poštni naslov organizatorja.');
+src/pages/CreateEventPage.jsx:    const timeSlots = pollDates.map(date => ({
+src/pages/CreateEventPage.jsx:      start_time: `${date}T00:00:00Z`,
+src/pages/CreateEventPage.jsx:      end_time: `${date}T23:59:59Z`
+src/pages/CreateEventPage.jsx:    }));
+src/pages/CreateEventPage.jsx:    try {
+src/pages/CreateEventPage.jsx:      const response = await fetch('/api/polls', {
+src/pages/CreateEventPage.jsx:        method: 'POST',
+src/pages/CreateEventPage.jsx:        headers: { 'Content-Type': 'application/json' },
+src/pages/CreateEventPage.jsx:        body: JSON.stringify({
+src/pages/CreateEventPage.jsx:          title: formData.title,
+src/pages/CreateEventPage.jsx:          description: formData.description,
+src/pages/CreateEventPage.jsx:          organizer_email: formData.organizer_email,
+src/pages/CreateEventPage.jsx:          time_slots: timeSlots,                      
+src/pages/CreateEventPage.jsx:          tasks: formData.tasks.split('\n').filter(t => t.trim() !== '')
+src/pages/CreateEventPage.jsx:        })
+src/pages/CreateEventPage.jsx:      });
+src/pages/CreateEventPage.jsx:      
+src/pages/CreateEventPage.jsx:      if (!response.ok) throw new Error('Napaka na strežniku.');
+src/pages/CreateEventPage.jsx:      
+src/pages/CreateEventPage.jsx:      const data = await response.json();
+src/pages/CreateEventPage.jsx:      if (data.admin_token && data.share_token) {
+src/pages/CreateEventPage.jsx:        //mi ga samo combinamo tako pravi maćoti
+src/pages/CreateEventPage.jsx:        setAdminLink(`${window.location.origin}/admin/${data.admin_token}?invite=${data.share_token}`);
+src/pages/CreateEventPage.jsx:        setShareLink(`${window.location.origin}/invite/${data.share_token}`);
+src/pages/CreateEventPage.jsx:      } else {
+src/pages/CreateEventPage.jsx:        alert('Strežnik ni vrnil vseh potrebnih žetonov za povezave.');
+src/pages/CreateEventPage.jsx:      }
+src/pages/CreateEventPage.jsx:      
+src/pages/CreateEventPage.jsx:    } catch (error) {
+src/pages/CreateEventPage.jsx:      console.error("Napaka pri ustvarjanju dogodka:", error);
+src/pages/CreateEventPage.jsx:      alert('Napaka pri komuniciranju s strežnikom.');
+src/pages/CreateEventPage.jsx:    }
+src/pages/CreateEventPage.jsx:  };
+src/pages/CreateEventPage.jsx:  if (adminLink && shareLink) {
+src/pages/CreateEventPage.jsx:    return (
+src/pages/CreateEventPage.jsx:      <div className="py-12 md:py-16 px-4 max-w-xl mx-auto animate-fade-in">
+src/pages/CreateEventPage.jsx:        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+src/pages/CreateEventPage.jsx:          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+src/pages/CreateEventPage.jsx:            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+src/pages/CreateEventPage.jsx:          </svg>
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        
+src/pages/CreateEventPage.jsx:        <h1 className="font-serif text-3xl font-normal text-gray-900 text-center mb-2">Dogodek uspešno ustvarjen!</h1>
+src/pages/CreateEventPage.jsx:        <p className="text-sm text-gray-600 font-light text-center mb-8">Shranite spodnji povezavi. Ena je namenjena vam za urejanje, druga pa povabljencem.</p>
+src/pages/CreateEventPage.jsx:        
+src/pages/CreateEventPage.jsx:        <div className="space-y-6">
+src/pages/CreateEventPage.jsx:          {/* LINK 1: FOR ADMIN */}
+src/pages/CreateEventPage.jsx:          <div className="block p-4 border border-amber-200 rounded-xl bg-amber-50/50 shadow-sm">
+src/pages/CreateEventPage.jsx:            <label className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">
+src/pages/CreateEventPage.jsx:              🔑 Povezava za Skrbnika (Admin)
+src/pages/CreateEventPage.jsx:            </label>
+src/pages/CreateEventPage.jsx:            <p className="text-xs text-amber-700 font-light mb-3">
+src/pages/CreateEventPage.jsx:              S to povezavo lahko dodajate termine, spremljate rezultate in zaključite glasovanje. Ne delite je z drugimi!
+src/pages/CreateEventPage.jsx:            </p>
+src/pages/CreateEventPage.jsx:            <div className="flex items-center gap-2 p-2 border border-amber-200 rounded-lg bg-white">
+src/pages/CreateEventPage.jsx:              <input 
+src/pages/CreateEventPage.jsx:                type="text" 
+src/pages/CreateEventPage.jsx:                readOnly 
+src/pages/CreateEventPage.jsx:                value={adminLink} 
+src/pages/CreateEventPage.jsx:                className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all"
+src/pages/CreateEventPage.jsx:              />
+src/pages/CreateEventPage.jsx:              <button 
+src/pages/CreateEventPage.jsx:                type="button" 
+src/pages/CreateEventPage.jsx:                onClick={() => {
+src/pages/CreateEventPage.jsx:                  navigator.clipboard.writeText(adminLink);
+src/pages/CreateEventPage.jsx:                  setCopiedAdmin(true);
+src/pages/CreateEventPage.jsx:                  setTimeout(() => setCopiedAdmin(false), 2000);
+src/pages/CreateEventPage.jsx:                }}
+src/pages/CreateEventPage.jsx:                className={`text-xs font-medium py-2 px-4 rounded transition shrink-0 ${copiedAdmin ? 'bg-emerald-700 text-white' : 'bg-amber-800 text-white hover:bg-amber-900'}`}
+src/pages/CreateEventPage.jsx:              >
+src/pages/CreateEventPage.jsx:                {copiedAdmin ? 'Kopirano!' : 'Kopiraj'}
+src/pages/CreateEventPage.jsx:              </button>
+src/pages/CreateEventPage.jsx:            </div>
+src/pages/CreateEventPage.jsx:          </div>
+src/pages/CreateEventPage.jsx:          {/* LINK 2: FOR PARTICIPANTS */}
+src/pages/CreateEventPage.jsx:          <div className="block p-4 border border-blue-200 rounded-xl bg-blue-50/50 shadow-sm">
+src/pages/CreateEventPage.jsx:            <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">
+src/pages/CreateEventPage.jsx:              📢 Povezava za Povabljence (Uporabniki)
+src/pages/CreateEventPage.jsx:            </label>
+src/pages/CreateEventPage.jsx:            <p className="text-xs text-blue-700 font-light mb-3">
+src/pages/CreateEventPage.jsx:              To povezavo pošljite prijateljem, sodelavcem ali udeležencem, da bodo lahko oddali svoje glasove.
+src/pages/CreateEventPage.jsx:            </p>
+src/pages/CreateEventPage.jsx:            <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-lg bg-white">
+src/pages/CreateEventPage.jsx:              <input 
+src/pages/CreateEventPage.jsx:                type="text" 
+src/pages/CreateEventPage.jsx:                readOnly 
+src/pages/CreateEventPage.jsx:                value={shareLink} 
+src/pages/CreateEventPage.jsx:                className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all"
+src/pages/CreateEventPage.jsx:              />
+src/pages/CreateEventPage.jsx:              <button 
+src/pages/CreateEventPage.jsx:                type="button" 
+src/pages/CreateEventPage.jsx:                onClick={() => {
+src/pages/CreateEventPage.jsx:                  navigator.clipboard.writeText(shareLink);
+src/pages/CreateEventPage.jsx:                  setCopiedShare(true);
+src/pages/CreateEventPage.jsx:                  setTimeout(() => setCopiedShare(false), 2000);
+src/pages/CreateEventPage.jsx:                }}
+src/pages/CreateEventPage.jsx:                className={`text-xs font-medium py-2 px-4 rounded transition shrink-0 ${copiedShare ? 'bg-emerald-700 text-white' : 'bg-blue-800 text-white hover:bg-blue-900'}`}
+src/pages/CreateEventPage.jsx:              >
+src/pages/CreateEventPage.jsx:                {copiedShare ? 'Kopirano!' : 'Kopiraj'}
+src/pages/CreateEventPage.jsx:              </button>
+src/pages/CreateEventPage.jsx:            </div>
+src/pages/CreateEventPage.jsx:          </div>
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        <div className="text-center mt-8">
+src/pages/CreateEventPage.jsx:          <button 
+src/pages/CreateEventPage.jsx:            type="button" 
+src/pages/CreateEventPage.jsx:            onClick={onCancel}
+src/pages/CreateEventPage.jsx:            className="text-sm text-gray-500 hover:text-gray-900 font-medium underline transition"
+src/pages/CreateEventPage.jsx:          >
+src/pages/CreateEventPage.jsx:            Nazaj na začetno stran
+src/pages/CreateEventPage.jsx:          </button>
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:      </div>
+src/pages/CreateEventPage.jsx:    );
+src/pages/CreateEventPage.jsx:  }
+src/pages/CreateEventPage.jsx:  return (
+src/pages/CreateEventPage.jsx:    <div className="py-12 md:py-16 px-4 max-w-xl mx-auto">
+src/pages/CreateEventPage.jsx:      <div className="mb-10">
+src/pages/CreateEventPage.jsx:        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">Ustvari nov dogodek</h1>
+src/pages/CreateEventPage.jsx:        <p className="text-sm text-gray-600 font-light">Brez registracije. Izpolnite osnovne podatke in prejmite povezavo do vabila.</p>
+src/pages/CreateEventPage.jsx:      </div>
+src/pages/CreateEventPage.jsx:      <form onSubmit={handleSubmit} className="space-y-6">
+src/pages/CreateEventPage.jsx:        <div className="flex flex-col gap-1.5">
+src/pages/CreateEventPage.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="title">Naslov dogodka *</label>
+src/pages/CreateEventPage.jsx:          <input type="text" id="title" name="title" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. Sestanek študentskega društva..." value={formData.title} onChange={handleChange} required />
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        <div className="flex flex-col gap-1.5">
+src/pages/CreateEventPage.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="organizer_email">E-pošta organizatorja *</label>
+src/pages/CreateEventPage.jsx:          <input type="email" id="organizer_email" name="organizer_email" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. tvoj.email@primer.com" value={formData.organizer_email} onChange={handleChange} required />
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        <div className="flex flex-col gap-1.5">
+src/pages/CreateEventPage.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="description">Opis dogodka</label>
+src/pages/CreateEventPage.jsx:          <textarea id="description" name="description" rows="3" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="Kratek opis, lokacija ali namen srečanja..." value={formData.description} onChange={handleChange} />
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        <div className="flex flex-col gap-1.5">
+src/pages/CreateEventPage.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Predlagaj datume za glasovanje</label>
+src/pages/CreateEventPage.jsx:          <CalendarPicker selectedDates={pollDates} onChange={setPollDates} isPollMode={true} />
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        <div className="flex flex-col gap-1.5">
+src/pages/CreateEventPage.jsx:          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="tasks">Dodelitev nalog (Ena naloga na vrstico)</label>
+src/pages/CreateEventPage.jsx:          <textarea id="tasks" name="tasks" rows="2" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. Rezervacija prostora&#10;Priprava gradiva" value={formData.tasks} onChange={handleChange} />
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:        <div className="flex flex-wrap-reverse gap-3 pt-4">
+src/pages/CreateEventPage.jsx:          <button type="button" className="flex-1 min-w-[140px] text-sm text-gray-600 font-medium bg-transparent border border-gray-300 py-3 px-5 rounded-md hover:bg-gray-50 hover:text-gray-900 transition" onClick={onCancel}>Prekliči</button>
+src/pages/CreateEventPage.jsx:          <button type="submit" className="flex-1 min-w-[140px] text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 transition shadow-sm">Ustvari in deli</button>
+src/pages/CreateEventPage.jsx:        </div>
+src/pages/CreateEventPage.jsx:      </form>
+src/pages/CreateEventPage.jsx:    </div>
+src/pages/CreateEventPage.jsx:  );
+src/pages/CreateEventPage.jsx:}
+src/pages/LandingPage.jsx:import React, { useState } from 'react';
+src/pages/LandingPage.jsx:import LandingView from '../views/LandingView';
+src/pages/LandingPage.jsx:import CreateEventWizard from './CreateEventPage';
+src/pages/LandingPage.jsx:import InviteView from '../views/InviteView';
+src/pages/LandingPage.jsx:export default function LandingPage() {
+src/pages/LandingPage.jsx:  const [view, setView] = useState('landing');
+src/pages/LandingPage.jsx:  const [activeEvent, setActiveEvent] = useState(null);
+src/pages/LandingPage.jsx:  const handleEventCreation = (formData) => {
+src/pages/LandingPage.jsx:    const processedTasks = formData.tasks
+src/pages/LandingPage.jsx:      ? formData.tasks.split('\n').map(t => t.trim()).filter(t => t.length > 0)
+src/pages/LandingPage.jsx:      : [];
+src/pages/LandingPage.jsx:    const completeEventPayload = {
+src/pages/LandingPage.jsx:      id: Math.random().toString(36).substr(2, 9),
+src/pages/LandingPage.jsx:      title: formData.title,
+src/pages/LandingPage.jsx:      description: formData.description,
+src/pages/LandingPage.jsx:      suggestedDates: formData.suggestedDates || [],
+src/pages/LandingPage.jsx:      tasks: processedTasks,
+src/pages/LandingPage.jsx:      organizerName: 'Organizator',
+src/pages/LandingPage.jsx:      createdAt: new Date()
+src/pages/LandingPage.jsx:    };
+src/pages/LandingPage.jsx:    setActiveEvent(completeEventPayload);
+src/pages/LandingPage.jsx:    setView('invite-view');
+src/pages/LandingPage.jsx:  };
+src/pages/LandingPage.jsx:  const navigateHome = (e) => {
+src/pages/LandingPage.jsx:    if (e) e.preventDefault();
+src/pages/LandingPage.jsx:    setActiveEvent(null);
+src/pages/LandingPage.jsx:    setView('landing');
+src/pages/LandingPage.jsx:  };
+src/pages/LandingPage.jsx:  return (
+src/pages/LandingPage.jsx:    <div className="min-h-screen bg-white flex flex-col antialiased text-gray-900 select-none">
+src/pages/LandingPage.jsx:      <nav className="flex items-center justify-between px-4 sm:px-8 h-16 border-b border-gray-100 bg-white sticky top-0 z-50">
+src/pages/LandingPage.jsx:        <a href="#" className="font-serif text-lg font-medium text-gray-900 tracking-tight" onClick={navigateHome}>EventEase</a>
+src/pages/LandingPage.jsx:      </nav>
+src/pages/LandingPage.jsx:      <main className="flex-grow">
+src/pages/LandingPage.jsx:        {view === 'landing' && <LandingView onStartCreating={() => setView('create-wizard')} />}
+src/pages/LandingPage.jsx:        {view === 'create-wizard' && <CreateEventWizard onCancel={navigateHome} onCreate={handleEventCreation} />}
+src/pages/LandingPage.jsx:        {view === 'invite-view' && activeEvent && <InviteView eventData={activeEvent} />}
+src/pages/LandingPage.jsx:      </main>
+src/pages/LandingPage.jsx:      <footer className="py-6 px-4 sm:px-8 border-t border-gray-100 flex flex-wrap-reverse items-center justify-between gap-4 text-xs font-light text-gray-400">
+src/pages/LandingPage.jsx:        <span>© 2026 EventEase</span>
+src/pages/LandingPage.jsx:        <div className="flex gap-4">
+src/pages/LandingPage.jsx:          <a href="#" className="hover:text-gray-600 transition" onClick={e => e.preventDefault()}>Zasebnost</a>
+src/pages/LandingPage.jsx:          <a href="#" className="hover:text-gray-600 transition" onClick={e => e.preventDefault()}>Pogoji uporabe</a>
+src/pages/LandingPage.jsx:          <a href="#" className="hover:text-gray-600 transition" onClick={e => e.preventDefault()}>Kontakt</a>
+src/pages/LandingPage.jsx:        </div>
+src/pages/LandingPage.jsx:      </footer>
+src/pages/LandingPage.jsx:    </div>
+src/pages/LandingPage.jsx:  );
+src/pages/LandingPage.jsx:}

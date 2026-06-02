@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import VoteResults from '../components/VoteResults';
 import CalendarPicker from '../components/CalendarPicker';
@@ -17,6 +17,8 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const noticeRef = useRef(null);
 
   useEffect(() => {
     if (propEventData) {
@@ -115,8 +117,15 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
 
   const handleFinalize = async (e) => {
     e.preventDefault();
-    if (!adminToken) return alert('Nimate skrbniških pravic za zaključek tega dogodka.');
-    if (!selectedSlotId) return alert('Prosimo, izberite končni termin za zaklep dogodka.');
+    if (!adminToken) {
+      setNotice({ type: 'error', message: 'Nimate skrbniških pravic za zaključek tega dogodka.' });
+      return;
+    }
+    if (!selectedSlotId) {
+      setNotice({ type: 'error', message: 'Prosimo, izberite končni termin za zaklep dogodka.' });
+      return;
+    }
+    setNotice(null);
 
     setIsSubmitting(true);
     try {
@@ -127,20 +136,26 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
       });
 
       if (response.ok) {
-        alert('Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko.');
-        navigate('/'); 
+        setNotice({ type: 'success', message: 'Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko.' });
+        setTimeout(() => navigate('/'), 1200);
       } else {
-        alert('Napaka na strežniku pri zaključevanju glasovanja.');
+        setNotice({ type: 'error', message: 'Napaka na strežniku pri zaključevanju glasovanja.' });
       }
     } catch (error) {
       console.error("Napaka pri zaključevanju polla:", error);
-      alert('Omrežna napaka pri zaključevanju.');
+      setNotice({ type: 'error', message: 'Omrežna napaka pri zaključevanju.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
+
+  useEffect(() => {
+    if (notice && noticeRef.current) {
+      noticeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [notice]);
 
   return (
     <div className="py-12 md:py-16 px-4 max-w-2xl mx-auto">
@@ -162,6 +177,12 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           </p>
         )}
       </div>
+
+      {notice && (
+        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+          {notice.message}
+        </div>
+      )}
 
       {/* Suggestions section */}
       {pendingSuggestions.length > 0 && (

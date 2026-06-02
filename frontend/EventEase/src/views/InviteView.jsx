@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
 import VoteResults from "../components/VoteResults";
 
@@ -9,6 +9,10 @@ export default function InviteView({ eventData }) {
   const [dateVotes, setDateVotes] = useState({});
   const [claimedTasks, setClaimedTasks] = useState([]);
   const [showNoDatePopup, setShowNoDatePopup] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [suggestNotice, setSuggestNotice] = useState(null);
+  const noticeRef = useRef(null);
+  const suggestNoticeRef = useRef(null);
 
   const {
     title,
@@ -27,6 +31,7 @@ export default function InviteView({ eventData }) {
     suggestedDates: suggestedDates || [],
     votes,
   }));
+  const resultsErrorRef = useRef(null);
 
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [suggestionDates, setSuggestionDates] = useState([]);
@@ -41,8 +46,15 @@ export default function InviteView({ eventData }) {
   };
 
   const handleSubmitSuggestion = async () => {
-    if (!guestName.trim()) return alert("Najprej vpišite svoje ime v obrazec.");
-    if (suggestionDates.length === 0) return alert("Izberite vsaj en datum.");
+    if (!guestName.trim()) {
+      setSuggestNotice({ type: 'error', message: 'Najprej vpišite svoje ime v obrazec.' });
+      return;
+    }
+    if (suggestionDates.length === 0) {
+      setSuggestNotice({ type: 'error', message: 'Izberite vsaj en datum.' });
+      return;
+    }
+    setSuggestNotice(null);
 
     setIsSuggesting(true);
     try {
@@ -57,12 +69,12 @@ export default function InviteView({ eventData }) {
       if (response.ok) {
         setShowSuggestModal(false);
         setSuggestionDates([]);
-        alert("Predlogi uspešno poslani organizatorju.");
+        setNotice({ type: 'success', message: 'Predlogi uspešno poslani organizatorju.' });
       } else {
-        alert("Napaka pri pošiljanju predlogov.");
+        setSuggestNotice({ type: 'error', message: 'Napaka pri pošiljanju predlogov.' });
       }
     } catch (e) {
-      alert("Omrežna napaka.");
+      setSuggestNotice({ type: 'error', message: 'Omrežna napaka.' });
     } finally {
       setIsSuggesting(false);
     }
@@ -70,12 +82,16 @@ export default function InviteView({ eventData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!guestName.trim()) return alert("Vpišite ime.");
+    if (!guestName.trim()) {
+      setNotice({ type: 'error', message: 'Vpišite ime.' });
+      return;
+    }
 
     const selectedDates = Object.keys(dateVotes).filter(
       (dateStr) => dateVotes[dateStr],
     );
     if (selectedDates.length === 0) return setShowNoDatePopup(true);
+    setNotice(null);
 
     const formattedVotes = suggestedDates.map((slot) => ({
       slot_id: slot.id,
@@ -101,10 +117,11 @@ export default function InviteView({ eventData }) {
       if (response.ok) {
         setIsSubmitted(true);
       } else {
-        alert("Napaka pri oddaji glasu na strežniku.");
+        setNotice({ type: 'error', message: 'Napaka pri oddaji glasu na strežniku.' });
       }
     } catch (error) {
       console.error("Napaka pri oddaji glasu:", error);
+      setNotice({ type: 'error', message: 'Omrežna napaka pri oddaji glasu.' });
     }
   };
 
@@ -151,6 +168,24 @@ export default function InviteView({ eventData }) {
     await fetchResults();
   };
 
+  useEffect(() => {
+    if (notice && noticeRef.current) {
+      noticeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [notice]);
+
+  useEffect(() => {
+    if (suggestNotice && suggestNoticeRef.current) {
+      suggestNoticeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [suggestNotice]);
+
+  useEffect(() => {
+    if (resultsError && resultsErrorRef.current) {
+      resultsErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [resultsError]);
+
   if (isSubmitted) {
     return (
       <div className="flex flex-col justify-center items-center min-h-[60vh] text-center px-4 bg-white max-w-xl mx-auto py-12">
@@ -190,7 +225,7 @@ export default function InviteView({ eventData }) {
               </p>
             )}
             {!resultsLoading && resultsError && (
-              <p className="text-xs text-red-500 font-light">{resultsError}</p>
+              <p ref={resultsErrorRef} className="text-xs text-red-500 font-light">{resultsError}</p>
             )}
             {!resultsLoading && !resultsError && (
               <VoteResults
@@ -219,6 +254,12 @@ export default function InviteView({ eventData }) {
           {description || "Ni opisa."}
         </p>
       </div>
+
+      {notice && (
+        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+          {notice.message}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="flex flex-col gap-1.5">
@@ -290,7 +331,10 @@ export default function InviteView({ eventData }) {
         </button>
         <button
           type="button"
-          onClick={() => setShowSuggestModal(true)}
+          onClick={() => {
+            setSuggestNotice(null);
+            setShowSuggestModal(true);
+          }}
           className="w-full text-sm text-blue-700 font-medium bg-blue-50 border border-blue-200 py-3 px-5 rounded-md hover:bg-blue-100 transition"
         >
           Predlagaj nov datum
@@ -333,6 +377,11 @@ export default function InviteView({ eventData }) {
               onChange={setSuggestionDates}
               isPollMode={false}
             />
+            {suggestNotice && (
+              <div ref={suggestNoticeRef} className={`mt-3 rounded-lg border px-3 py-2 text-xs font-light ${suggestNotice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                {suggestNotice.message}
+              </div>
+            )}
             <div className="mt-4 flex gap-2">
               <button
                 type="button"

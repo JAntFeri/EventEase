@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import CalendarPicker from '../components/CalendarPicker';
 
 export default function CreateEventWizard({ onCancel, onCreate }) {
   const [formData, setFormData] = useState({ title: '', description: '', organizer_email: '', tasks: '' });
   const [pollDates, setPollDates] = useState([]);
+  const [notice, setNotice] = useState(null);
+  const noticeRef = useRef(null);
   
   // States to hold the generated links and handle clipboard feedback
   const [adminLink, setAdminLink] = useState('');
@@ -18,8 +20,15 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title) return alert('Prosimo, vnesite naslov dogodka.');
-    if (!formData.organizer_email) return alert('Prosimo, vnesite e-poštni naslov organizatorja.');
+    if (!formData.title) {
+      setNotice({ type: 'error', message: 'Prosimo, vnesite naslov dogodka.' });
+      return;
+    }
+    if (!formData.organizer_email) {
+      setNotice({ type: 'error', message: 'Prosimo, vnesite e-poštni naslov organizatorja.' });
+      return;
+    }
+    setNotice(null);
 
     const timeSlots = pollDates.map(date => ({
       start_time: `${date}T00:00:00Z`,
@@ -48,15 +57,21 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
         setAdminLink(`${window.location.origin}/admin/${data.admin_token}?invite=${data.share_token}`);
         setShareLink(`${window.location.origin}/invite/${data.share_token}`);
       } else {
-        alert('Strežnik ni vrnil vseh potrebnih žetonov za povezave.');
+        setNotice({ type: 'error', message: 'Strežnik ni vrnil vseh potrebnih žetonov za povezave.' });
       }
 
       
     } catch (error) {
       console.error("Napaka pri ustvarjanju dogodka:", error);
-      alert('Napaka pri komuniciranju s strežnikom.');
+      setNotice({ type: 'error', message: 'Napaka pri komuniciranju s strežnikom.' });
     }
   };
+
+  useEffect(() => {
+    if (notice && noticeRef.current) {
+      noticeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [notice]);
 
   if (adminLink && shareLink) {
     return (
@@ -150,15 +165,21 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
         <p className="text-sm text-gray-600 font-light">Brez registracije. Izpolnite osnovne podatke in prejmite povezavo do vabila.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {notice && (
+        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+          {notice.message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="title">Naslov dogodka *</label>
-          <input type="text" id="title" name="title" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. Sestanek študentskega društva..." value={formData.title} onChange={handleChange} required />
+          <input type="text" id="title" name="title" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. Sestanek študentskega društva..." value={formData.title} onChange={handleChange} />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="organizer_email">E-pošta organizatorja *</label>
-          <input type="email" id="organizer_email" name="organizer_email" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. tvoj.email@primer.com" value={formData.organizer_email} onChange={handleChange} required />
+          <input type="email" id="organizer_email" name="organizer_email" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. tvoj.email@primer.com" value={formData.organizer_email} onChange={handleChange} />
         </div>
 
         <div className="flex flex-col gap-1.5">

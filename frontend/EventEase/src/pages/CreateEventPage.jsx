@@ -12,15 +12,89 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
   const [notice, setNotice] = useState(null);
   const noticeRef = useRef(null);
 
-  // States to hold the generated links and handle clipboard feedback
   const [adminLink, setAdminLink] = useState("");
   const [shareLink, setShareLink] = useState("");
   const [copiedAdmin, setCopiedAdmin] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
+  const [emailInput, setEmailInput] = useState("");
+  const [recipientEmails, setRecipientEmails] = useState([]);
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddEmail = (e) => {
+    e.preventDefault();
+    const email = emailInput.trim().toLowerCase();
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!email) return;
+    if (!emailRegex.test(email)) {
+      alert("Prosimo, vnesite veljaven e-poštni naslov.");
+      return;
+    }
+    if (recipientEmails.includes(email)) {
+      alert("Ta e-poštni naslov je že dodan.");
+      return;
+    }
+
+    setRecipientEmails([...recipientEmails, email]);
+    setEmailInput("");
+  };
+
+  const handleRemoveEmail = (indexToRemove) => {
+    setRecipientEmails(recipientEmails.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleSendEmails = async () => {
+    if (recipientEmails.length === 0) return;
+    setSendingEmails(true);
+    setEmailSuccess(false);
+
+    try {
+      // TTUKI BO ŠOU API KLIC ZA EMAIL
+      const response = await fetch("/api/polls/share-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          share_link: shareLink,
+          title: formData.title,
+          recipients: recipientEmails,
+        }),
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setEmailSuccess(true);
+      setRecipientEmails([]); 
+    } catch (error) {
+      console.error("Napaka pri pošiljanju e-pošte:", error);
+      alert("Prišlo je do napake pri pošiljanju vabil.");
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: formData.title || "Vabilo na dogodek",
+          text: `Živijo! Glasuj za termin za dogodek: ${formData.title}`,
+          url: shareLink,
+        });
+      } catch (err) {
+        console.log("Uporabnik je preklical deljenje ali pa je prišlo do napake", err);
+      }
+    } else {
+      navigator.clipboard.writeText(shareLink);
+      alert("Povezava kopirana v odložišče! (Vaš brskalnik ne podpira sistemskega deljenja)");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -38,29 +112,24 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
     }
     setNotice(null);
 
-    // FIX: Access item.date and format it cleanly for Postgres
-    // Locate the handleSubmit function inside CreateEventWizard and replace the timeSlots mapping:
-
-        if (!pollDates || pollDates.length === 0) {
+    if (!pollDates || pollDates.length === 0) {
       setNotice({ type: 'error', message: 'Prosimo, izberite vsaj en termin na koledarju.' });
       return;
     }
 
     const timeSlots = pollDates.map(item => {
-      // If a date was selected but no custom time picker was engaged, 
-      // item.start_time won't exist yet. Fall back to standard defaults.
       if (!item.start_time) {
         return {
           start_time: `${item.date}T12:00:00`,
           end_time: `${item.date}T13:00:00`
         };
       }
-      
       return {
         start_time: item.start_time,
         end_time: item.end_time
       };
     });
+
     try {
       const response = await fetch("/api/polls", {
         method: "POST",
@@ -79,7 +148,6 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
       const data = await response.json();
 
       if (data.admin_token && data.share_token) {
-        //mi ga samo combinamo tako pravi maćoti
         setAdminLink(
           `${window.location.origin}/admin/${data.admin_token}?invite=${data.share_token}`,
         );
@@ -105,23 +173,15 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
     }
   }, [notice]);
 
+  const encodedUrl = encodeURIComponent(shareLink);
+  const encodedText = encodeURIComponent(`Glasuj za termin za dogodek: ${formData.title}`);
+
   if (adminLink && shareLink) {
     return (
       <div className="py-12 md:py-16 px-4 max-w-xl mx-auto animate-fade-in">
         <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
 
@@ -129,27 +189,20 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
           Dogodek uspešno ustvarjen!
         </h1>
         <p className="text-sm text-gray-600 font-light text-center mb-8">
-          Shranite spodnji povezavi. Ena je namenjena vam za urejanje, druga pa
-          povabljencem.
+          Shranite spodnji povezavi ali pa ju takoj delite s povabljenci.
         </p>
 
         <div className="space-y-6">
           {/* LINK 1: FOR ADMIN */}
           <div className="block p-4 border border-amber-200 rounded-xl bg-amber-50/50 shadow-sm">
             <label className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">
-              🔑 Povezava za Skrbnika (Admin)
+              🔑 Povezava za ustvarjalca
             </label>
             <p className="text-xs text-amber-700 font-light mb-3">
-              S to povezavo lahko dodajate termine, spremljate rezultate in
-              zaključite glasovanje. Ne delite je z drugimi!
+              S to povezavo lahko dodajate termine, spremljate rezultate in zaključite glasovanje. Ne delite je z drugimi!
             </p>
             <div className="flex items-center gap-2 p-2 border border-amber-200 rounded-lg bg-white">
-              <input
-                type="text"
-                readOnly
-                value={adminLink}
-                className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all"
-              />
+              <input type="text" readOnly value={adminLink} className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all" />
               <button
                 type="button"
                 onClick={() => {
@@ -167,19 +220,13 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
           {/* LINK 2: FOR PARTICIPANTS */}
           <div className="block p-4 border border-blue-200 rounded-xl bg-blue-50/50 shadow-sm">
             <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">
-              📢 Povezava za Povabljence (Uporabniki)
+              📢 Povezava za Udeležence
             </label>
             <p className="text-xs text-blue-700 font-light mb-3">
-              To povezavo pošljite prijateljem, sodelavcem ali udeležencem, da
-              bodo lahko oddali svoje glasove.
+              To povezavo pošljite prijateljem, sodelavcem ali udeležencem, da bodo lahko oddali svoje glasove.
             </p>
             <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-lg bg-white">
-              <input
-                type="text"
-                readOnly
-                value={shareLink}
-                className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all"
-              />
+              <input type="text" readOnly value={shareLink} className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all" />
               <button
                 type="button"
                 onClick={() => {
@@ -192,6 +239,117 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
                 {copiedShare ? "Kopirano!" : "Kopiraj"}
               </button>
             </div>
+          </div>
+
+          <div className="block p-4 border border-gray-200 rounded-xl bg-gray-50/50 shadow-sm">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+              🔗 Hitro deljenje na družbena omrežja
+            </label>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* WhatsApp */}
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+              >
+                WhatsApp
+              </a>
+              
+              {/* Telegram */}
+              <a
+                href={`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition"
+              >
+                Telegram
+              </a>
+
+              {/* Messenger / Facebook Link Fallback */}
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+              >
+                Messenger
+              </a>
+
+              {/* Sistemski share za telefon */}
+              <button
+                type="button"
+                onClick={handleNativeShare}
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition col-span-2 sm:col-span-1"
+              >
+                📱 Drugo...
+              </button>
+            </div>
+          </div>
+
+          {/* Email-seznam*/}
+          <div className="block p-4 border border-violet-200 rounded-xl bg-violet-50/30 shadow-sm">
+            <label className="block text-xs font-bold text-violet-800 uppercase tracking-wider mb-2">
+              ✉️ Pošlji vabila na e-naslove
+            </label>
+            <p className="text-xs text-violet-700 font-light mb-3">
+              Vnesite e-poštne naslove povabljencev in jim neposredno pošljite povezavo.
+            </p>
+
+            {emailSuccess && (
+              <div className="mb-3 text-xs text-emerald-700 font-medium bg-emerald-50 p-2 rounded border border-emerald-200">
+                ✓ Vabila so bila uspešno oddana v pošiljanje!
+              </div>
+            )}
+
+            <div className="flex gap-2 mb-3">
+              <input
+                type="email"
+                placeholder="npr. prijatelj@primer.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddEmail(e)}
+                className="text-sm p-2.5 border border-gray-200 rounded-lg outline-none focus:border-violet-500 bg-white text-gray-950 transition flex-1 shadow-sm"
+              />
+              <button
+                type="button"
+                onClick={handleAddEmail}
+                className="text-xs font-medium bg-violet-800 text-white px-4 rounded-lg hover:bg-violet-900 transition"
+              >
+                Dodaj
+              </button>
+            </div>
+
+            {recipientEmails.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 p-2 bg-white border border-violet-100 rounded-lg max-h-24 overflow-y-auto mb-4">
+                {recipientEmails.map((email, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1 text-xs bg-violet-50 text-violet-800 px-2 py-1 rounded-md border border-violet-200 font-light">
+                    {email}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveEmail(idx)}
+                      className="text-violet-500 hover:text-violet-900 font-bold focus:outline-none ml-1"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={recipientEmails.length === 0 || sendingEmails}
+              onClick={handleSendEmails}
+              className={`w-full py-2.5 rounded-lg text-xs font-semibold tracking-wide transition ${
+                recipientEmails.length === 0
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-violet-800 text-white hover:bg-violet-900 shadow-sm"
+              }`}
+            >
+              {sendingEmails ? "Pošiljanje..." : `Pošlji vabilo (${recipientEmails.length})`}
+            </button>
           </div>
         </div>
 
@@ -215,116 +373,57 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
           Ustvari nov dogodek
         </h1>
         <p className="text-sm text-gray-600 font-light">
-          Brez registracije. Izpolnite osnovne podatke in prejmite povezavo do
-          vabila.
+          Brez registracije. Izpolnite osnovne podatke in prejmite povezavo do vabila.
         </p>
       </div>
 
       {notice && (
-        <div
-          ref={noticeRef}
-          className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}
-        >
+        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
           {notice.message}
         </div>
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         <div className="flex flex-col gap-1.5">
-          <label
-            className="text-xs font-semibold text-gray-700 uppercase tracking-wider"
-            htmlFor="title"
-          >
+          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="title">
             Naslov dogodka *
           </label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm"
-            placeholder="npr. Sestanek študentskega društva..."
-            value={formData.title}
-            onChange={handleChange}
-          />
+          <input type="text" id="title" name="title" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. Sestanek študentskega društva..." value={formData.title} onChange={handleChange} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label
-            className="text-xs font-semibold text-gray-700 uppercase tracking-wider"
-            htmlFor="organizer_email"
-          >
+          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="organizer_email">
             E-pošta organizatorja *
           </label>
-          <input
-            type="email"
-            id="organizer_email"
-            name="organizer_email"
-            className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm"
-            placeholder="npr. tvoj.email@primer.com"
-            value={formData.organizer_email}
-            onChange={handleChange}
-          />
+          <input type="email" id="organizer_email" name="organizer_email" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. tvoj.email@primer.com" value={formData.organizer_email} onChange={handleChange} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label
-            className="text-xs font-semibold text-gray-700 uppercase tracking-wider"
-            htmlFor="description"
-          >
+          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="description">
             Opis dogodka
           </label>
-          <textarea
-            id="description"
-            name="description"
-            rows="3"
-            className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm"
-            placeholder="Kratek opis, lokacija ali namen srečanja..."
-            value={formData.description}
-            onChange={handleChange}
-          />
+          <textarea id="description" name="description" rows="3" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="Kratek opis, lokacija ali namen srečanja..." value={formData.description} onChange={handleChange} />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
             Predlagaj datume za glasovanje
           </label>
-          <CalendarPicker
-            selectedDates={pollDates}
-            onChange={setPollDates}
-            isPollMode={true}
-          />
+          <CalendarPicker selectedDates={pollDates} onChange={setPollDates} isPollMode={true} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label
-            className="text-xs font-semibold text-gray-700 uppercase tracking-wider"
-            htmlFor="tasks"
-          >
+          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider" htmlFor="tasks">
             Dodelitev nalog (Ena naloga na vrstico)
           </label>
-          <textarea
-            id="tasks"
-            name="tasks"
-            rows="2"
-            className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm"
-            placeholder="npr. Rezervacija prostora&#10;Priprava gradiva"
-            value={formData.tasks}
-            onChange={handleChange}
-          />
+          <textarea id="tasks" name="tasks" rows="2" className="text-base p-3 border border-gray-200 rounded-lg outline-none focus:border-black bg-white text-gray-950 transition w-full shadow-sm" placeholder="npr. Rezervacija prostora&#10;Priprava gradiva" value={formData.tasks} onChange={handleChange} />
         </div>
 
         <div className="flex flex-wrap-reverse gap-3 pt-4">
-          <button
-            type="button"
-            className="flex-1 min-w-[140px] text-sm text-gray-600 font-medium bg-transparent border border-gray-300 py-3 px-5 rounded-md hover:bg-gray-50 hover:text-gray-900 transition"
-            onClick={onCancel}
-          >
+          <button type="button" className="flex-1 min-w-[140px] text-sm text-gray-600 font-medium bg-transparent border border-gray-300 py-3 px-5 rounded-md hover:bg-gray-50 hover:text-gray-900 transition" onClick={onCancel}>
             Prekliči
           </button>
-          <button
-            type="submit"
-            className="flex-1 min-w-[140px] text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 transition shadow-sm"
-          >
+          <button type="submit" className="flex-1 min-w-[140px] text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 transition shadow-sm">
             Ustvari in deli
           </button>
         </div>

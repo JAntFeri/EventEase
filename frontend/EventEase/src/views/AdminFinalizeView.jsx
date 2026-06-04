@@ -20,6 +20,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   const [notice, setNotice] = useState(null);
   const noticeRef = useRef(null);
 
+  // --- Core Data Fetching Hook ---
   useEffect(() => {
     if (propEventData) {
       setEventData(propEventData);
@@ -48,12 +49,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           votes: data.votes || []
         });
 
-        // TODO: replace with real API call when GET /api/polls/admin/{adminToken} is ready
-        // const adminResponse = await fetch(`/api/polls/admin/${adminToken}`);
-        // const adminData = await adminResponse.json();
-        // setSuggestions(adminData.suggestions || []);
-
-        // Mock suggestions for now
         setSuggestions([
           {
             id: 'mock-1',
@@ -86,34 +81,20 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     }
   }, [basicToken, propEventData]);
 
-  const handleSuggestionAction = async (suggestionId, action) => {
-    // TODO: uncomment when endpoints are ready
-    // await fetch(`/api/polls/admin/${adminToken}/suggestions/${suggestionId}/${action}`, { method: 'POST' });
+  // --- Notice Auto-Scroll Hook (MOVED UP HERE) ---
+  useEffect(() => {
+    if (notice && noticeRef.current) {
+      noticeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [notice]);
 
+  // --- Handlers & Helpers ---
+  const handleSuggestionAction = async (suggestionId, action) => {
     setSuggestions(prev => prev.map(s =>
       s.id === suggestionId ? { ...s, status: action === 'accept' ? 'accepted' : 'rejected' } : s
     ));
     setPendingSuggestion(null);
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-gray-500 text-sm font-light">
-        Nalagam administratorske podatke...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
-        <h2 className="text-xl font-serif text-gray-900 mb-2">Napaka pri dostopu</h2>
-        <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
-      </div>
-    );
-  }
-
-  const { title, description, suggestedDates = [], votes = [] } = eventData;
 
   const handleFinalize = async (e) => {
     e.preventDefault();
@@ -149,13 +130,27 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     }
   };
 
-  const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
+  // --- Conditional UI Returns are now safely placed below all Hooks ---
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-gray-500 text-sm font-light">
+        Nalagam administratorske podatke...
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (notice && noticeRef.current) {
-      noticeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [notice]);
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
+        <h2 className="text-xl font-serif text-gray-900 mb-2">Napaka pri dostopu</h2>
+        <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
+      </div>
+    );
+  }
+
+  // Safe to destructure now since we know loading is false and eventData exists
+  const { title, description, suggestedDates = [], votes = [] } = eventData || {};
+  const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
 
   return (
     <div className="py-12 md:py-16 px-4 max-w-2xl mx-auto">
@@ -289,7 +284,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             disabled={isSubmitting}
             className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 disabled:bg-gray-400 disabled:scale-100 transition shadow-sm"
           >
-            {isSubmitting ? 'Zaklujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
+            {isSubmitting ? 'Zaključujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
           </button>
         </div>
       </form>

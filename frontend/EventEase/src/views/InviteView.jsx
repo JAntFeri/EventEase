@@ -80,6 +80,7 @@ export default function InviteView({ eventData }) {
     }
   };
 
+  // --- FIXED: Submits correct data formatting matching time-slot identifiers ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!guestName.trim()) {
@@ -87,21 +88,33 @@ export default function InviteView({ eventData }) {
       return;
     }
 
-    const selectedDates = Object.keys(dateVotes).filter(
-      (dateStr) => dateVotes[dateStr],
+    // Check if the user selected 'yes' or 'if_needed' for at least one slot
+    const selectedSlots = Object.keys(dateVotes).filter(
+      (slotKey) => dateVotes[slotKey] === "yes" || dateVotes[slotKey] === "if_needed"
     );
-    if (selectedDates.length === 0) return setShowNoDatePopup(true);
+    
+    if (selectedSlots.length === 0) {
+      return setShowNoDatePopup(true);
+    }
     setNotice(null);
 
-    const formattedVotes = suggestedDates.map((slot) => ({
-      slot_id: slot.id,
-      status:
-        dateVotes[slot.date] === "if_needed"
-          ? "if_need_be"
-          : dateVotes[slot.date] === "yes"
-            ? "yes"
-            : "no",
-    }));
+    // Format options cleanly into the array payloads backend expects
+    const formattedVotes = suggestedDates.map((slot) => {
+      // CalendarPicker can key by slot.id if configured, or fallback to slot.date
+      const currentVoteStatus = dateVotes[slot.id] || dateVotes[slot.date];
+      
+      let backendStatus = "no";
+      if (currentVoteStatus === "yes") {
+        backendStatus = "yes";
+      } else if (currentVoteStatus === "if_needed") {
+        backendStatus = "if_need_be";
+      }
+
+      return {
+        slot_id: slot.id,
+        status: backendStatus,
+      };
+    });
 
     try {
       const response = await fetch(`/api/polls/share/${share_token}/vote`, {
@@ -208,7 +221,7 @@ export default function InviteView({ eventData }) {
           >
             {resultsVisible
               ? "Skrij rezultate glasovanja"
-              : "Prikazi trenutne rezultate glasovanja"}
+              : "Prikaži trenutne rezultate glasovanja"}
           </button>
           <button
             onClick={() => setIsSubmitted(false)}
@@ -239,8 +252,10 @@ export default function InviteView({ eventData }) {
     );
   }
 
-  const plainDisplayDates = suggestedDates.map((slot) => slot.date);
-
+  const plainDisplayDates = suggestedDates.map((slot) => {
+    if (slot.start_time) return slot.start_time.split("T")[0];
+    return slot.date;
+  });
   return (
     <div className="py-12 md:py-16 px-4 max-w-xl mx-auto">
       <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 py-1 px-2.5 rounded-full mb-4">
@@ -281,6 +296,7 @@ export default function InviteView({ eventData }) {
             Kateri termini ti ustrezajo?
           </label>
           <CalendarPicker
+            selectedDates={suggestedDates} // Pass the slots directly so it reads the child times!
             dateStatuses={dateVotes}
             onDateStatusesChange={setDateVotes}
             isPollMode={true}

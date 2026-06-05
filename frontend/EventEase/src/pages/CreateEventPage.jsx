@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
+import { buildSharePath } from "../utils/eventHelpers.js";
 
 export default function CreateEventWizard({ onCancel, onCreate }) {
   const [formData, setFormData] = useState({
@@ -151,7 +152,7 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
         setAdminLink(
           `${window.location.origin}/admin/${data.admin_token}?invite=${data.share_token}`,
         );
-        setShareLink(`${window.location.origin}/invite/${data.share_token}`);
+        setShareLink(`${window.location.origin}${buildSharePath(data.share_token)}`);
       } else {
         setNotice({
           type: "error",

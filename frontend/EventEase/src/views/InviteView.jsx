@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
 import VoteResults from "../components/VoteResults";
+import { isValidVoteStatus } from "../utils/eventHelpers.js";
 
 export default function InviteView({ eventData }) {
   const [guestName, setGuestName] = useState("");
@@ -112,7 +113,7 @@ export default function InviteView({ eventData }) {
 
       return {
         slot_id: slot.id,
-        status: backendStatus,
+        status: isValidVoteStatus(backendStatus) ? backendStatus : "no",
       };
     });
 

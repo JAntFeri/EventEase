@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import InviteView from '../views/InviteView';
+import { organizerNameFromEmail } from '../utils/eventHelpers.js';
 
 export default function InvitePage() {
   const { token } = useParams(); 
@@ -36,7 +37,7 @@ export default function InvitePage() {
           share_token: token,
           title: data.title,
           description: data.description,
-          organizerName: data.organizer_email ? data.organizer_email.split('@')[0] : 'Organizator',
+          organizerName: organizerNameFromEmail(data.organizer_email),
           suggestedDates: formattedSlots, 
           tasks: data.tasks || [],
           votes: data.votes || []

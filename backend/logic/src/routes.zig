@@ -1,55 +1,7 @@
 const std = @import("std");
 const httpz = @import("httpz");
 const App = @import("main.zig").App;
-
-fn uuidToHex(raw: []const u8, arena: std.mem.Allocator) ![]const u8 {
-    if (raw.len != 16) return error.InvalidUUID;
-    const hex = "0123456789abcdef";
-    var buf: [36]u8 = undefined;
-    var j: usize = 0;
-    for (0..16) |i| {
-        if (i == 4 or i == 6 or i == 8 or i == 10) {
-            buf[j] = '-'; j += 1;
-        }
-        buf[j] = hex[raw[i] >> 4]; j += 1;
-        buf[j] = hex[raw[i] & 0x0F]; j += 1;
-    }
-    return arena.dupe(u8, &buf);
-}
-
-fn hexToUuid(hex: []const u8, arena: std.mem.Allocator) ![]const u8 {
-    if (hex.len != 36) return error.InvalidUUID;
-    const raw = try arena.alloc(u8, 16);
-    var i: usize = 0;
-    var j: usize = 0;
-    while (i < 36) : (i += 1) {
-        const c = hex[i];
-        if (c == '-') continue;
-        const val = switch (c) {
-            '0'...'9' => c - '0',
-            'a'...'f' => c - 'a' + 10,
-            'A'...'F' => c - 'A' + 10,
-            else => return error.InvalidUUID,
-        };
-        if (j % 2 == 0) {
-            raw[j / 2] = @intCast(val << 4);
-        } else {
-            raw[j / 2] |= @intCast(val);
-        }
-        j += 1;
-    }
-    if (j != 32) return error.InvalidUUID;
-    return raw;
-}
-
-fn uuidV4(arena: std.mem.Allocator, rng: std.Random) ![]const u8 {
-    var bytes: [16]u8 = undefined;
-    rng.bytes(&bytes);
-    bytes[6] = (bytes[6] & 0x0F) | 0x40;
-    bytes[8] = (bytes[8] & 0x3F) | 0x80;
-
-    return uuidToHex(&bytes, arena);   // reuse the hex converter
-}
+const uuid = @import("uuid.zig");
 
 fn jsonParse(comptime T: type, arena: std.mem.Allocator, body: []const u8) !T {
     return std.json.parseFromSliceLeaky(T, arena, body, .{ .ignore_unknown_fields = true });
@@ -72,14 +24,14 @@ pub fn createPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         tasks: []const []const u8 = &.{},
     }, res.arena, body);
 
-    const poll_id_hex = try uuidV4(res.arena, app.rng);
-    const admin_token_hex = try uuidV4(res.arena, app.rng);
-    const share_token_hex = try uuidV4(res.arena, app.rng);
+    const poll_id_hex = try uuid.uuidV4(res.arena, app.rng);
+    const admin_token_hex = try uuid.uuidV4(res.arena, app.rng);
+    const share_token_hex = try uuid.uuidV4(res.arena, app.rng);
 
     // Convert hex UUIDs to raw bytes before inserting
-    const poll_id_raw = try hexToUuid(poll_id_hex, res.arena);
-    const admin_token_raw = try hexToUuid(admin_token_hex, res.arena);
-    const share_token_raw = try hexToUuid(share_token_hex, res.arena);
+    const poll_id_raw = try uuid.hexToUuid(poll_id_hex, res.arena);
+    const admin_token_raw = try uuid.hexToUuid(admin_token_hex, res.arena);
+    const share_token_raw = try uuid.hexToUuid(share_token_hex, res.arena);
 
     _ = try app.db.exec(
         \\ INSERT INTO polls (id, title, description, organizer_email, admin_token, share_token)
@@ -87,8 +39,8 @@ pub fn createPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     , .{ poll_id_raw, input.title, input.description, input.organizer_email, admin_token_raw, share_token_raw });
 
     for (input.time_slots) |slot| {
-        const slot_id_hex = try uuidV4(res.arena, app.rng);
-        const slot_id_raw = try hexToUuid(slot_id_hex, res.arena);
+        const slot_id_hex = try uuid.uuidV4(res.arena, app.rng);
+        const slot_id_raw = try uuid.hexToUuid(slot_id_hex, res.arena);
         _ = try app.db.exec(
             \\ INSERT INTO time_slots (id, poll_id, start_time, end_time)
             \\ VALUES ($1, $2, $3, $4)
@@ -119,7 +71,7 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         return;
     };
 
-    const share_token_raw = try hexToUuid(share_token_hex, res.arena);
+    const share_token_raw = try uuid.hexToUuid(share_token_hex, res.arena);
 
     var conn = try app.db.acquire();
     defer app.db.release(conn);
@@ -145,9 +97,9 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
 
     poll_row.deinit() catch {};
 
-    const poll_id_hex = try uuidToHex(poll_id_raw, res.arena);
+    const poll_id_hex = try uuid.uuidToHex(poll_id_raw, res.arena);
     const final_slot_id_hex = if (final_slot_id_raw) |raw|
-        try uuidToHex(raw, res.arena)
+        try uuid.uuidToHex(raw, res.arena)
     else
         null;
 
@@ -166,7 +118,7 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     while (try slots_result.next()) |row| {
         const slot_id_raw = try res.arena.dupe(u8, try row.get([]const u8, 0));
         try slots.append(res.arena, .{
-            .id = try uuidToHex(slot_id_raw, res.arena),
+            .id = try uuid.uuidToHex(slot_id_raw, res.arena),
             .start_time = try res.arena.dupe(u8, try row.get([]const u8, 1)),
             .end_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
         });
@@ -208,7 +160,7 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
             const status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1));
 
             try options_list.append(res.arena, .{
-                .slot_id = try uuidToHex(slot_id_raw, res.arena),
+                .slot_id = try uuid.uuidToHex(slot_id_raw, res.arena),
                 .status = status,
             });
         }
@@ -251,7 +203,7 @@ pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     }, res.arena, body);
 
     // Convert incoming hex tokens to raw bytes
-    const share_token_raw = try hexToUuid(share_token_hex, res.arena);
+    const share_token_raw = try uuid.hexToUuid(share_token_hex, res.arena);
 
     var conn = try app.db.acquire();
     defer app.db.release(conn);
@@ -268,8 +220,8 @@ pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     poll_row.deinit() catch {};
 
     // Generate a new vote
-    const vote_id_hex = try uuidV4(res.arena, app.rng);
-    const vote_id_raw = try hexToUuid(vote_id_hex, res.arena);
+    const vote_id_hex = try uuid.uuidV4(res.arena, app.rng);
+    const vote_id_raw = try uuid.hexToUuid(vote_id_hex, res.arena);
 
     // Catch PG error to print details
     _ = conn.exec(
@@ -283,10 +235,10 @@ pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
 
     // Process each date vote
     for (input.date_votes) |dv| {
-        const slot_id_raw = try hexToUuid(dv.slot_id, res.arena);
+        const slot_id_raw = try uuid.hexToUuid(dv.slot_id, res.arena);
         // Generate a new UUID for each vote_option row
-        const option_id_hex = try uuidV4(res.arena, app.rng);
-        const option_id_raw = try hexToUuid(option_id_hex, res.arena);
+        const option_id_hex = try uuid.uuidV4(res.arena, app.rng);
+        const option_id_raw = try uuid.hexToUuid(option_id_hex, res.arena);
 
         _ = conn.exec(
             \\ INSERT INTO vote_options (id, vote_id, time_slot_id, status)
@@ -318,8 +270,8 @@ pub fn finalizePoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
     }, res.arena, body);
 
     // Convert incoming hex tokens to raw bytes
-    const admin_token_raw = try hexToUuid(admin_token_hex, res.arena);
-    const final_slot_id_raw = try hexToUuid(input.final_slot_id, res.arena);
+    const admin_token_raw = try uuid.hexToUuid(admin_token_hex, res.arena);
+    const final_slot_id_raw = try uuid.hexToUuid(input.final_slot_id, res.arena);
 
     var conn = try app.db.acquire();
     defer app.db.release(conn);

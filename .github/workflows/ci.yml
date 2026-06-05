@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/EventEase
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/EventEase/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  backend:
+    name: Backend (Zig)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/logic
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - run: zig build
+      - run: zig build test
+
+  docker-smoke:
+    name: Docker + API smoke
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: docker compose build
+
+      - run: docker compose up -d
+
+      - name: Wait for app
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/ && break
+            sleep 2
+          done
+
+      - run: sudo apt-get update && sudo apt-get install -y jq
+
+      - run: bash scripts/ci-smoke-test.sh http://localhost:8080
+
+      - if: always()
+        run: docker compose down -v

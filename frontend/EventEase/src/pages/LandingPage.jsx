@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import LandingView from '../views/LandingView';
 import CreateEventWizard from './CreateEventPage';
 import InviteView from '../views/InviteView';

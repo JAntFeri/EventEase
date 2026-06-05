@@ -1,5 +1,4 @@
 // src/App.jsx
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import InvitePage from './pages/InvitePage'; // The page wrapper we created earlier

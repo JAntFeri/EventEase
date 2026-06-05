@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
 import { buildSharePath } from "../utils/eventHelpers.js";
 
-export default function CreateEventWizard({ onCancel, onCreate }) {
+export default function CreateEventWizard({ onCancel}) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -59,7 +59,7 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
 
     try {
       // TTUKI BO ŠOU API KLIC ZA EMAIL
-      const response = await fetch("/api/polls/share-email", {
+      /*const response = await fetch("/api/polls/share-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -67,7 +67,7 @@ export default function CreateEventWizard({ onCancel, onCreate }) {
           title: formData.title,
           recipients: recipientEmails,
         }),
-      });
+      })*/
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 

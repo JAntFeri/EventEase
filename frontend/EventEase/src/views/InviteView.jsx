@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
 import VoteResults from "../components/VoteResults";
 import { isValidVoteStatus } from "../utils/eventHelpers.js";
@@ -74,7 +74,7 @@ export default function InviteView({ eventData }) {
       } else {
         setSuggestNotice({ type: 'error', message: 'Napaka pri pošiljanju predlogov.' });
       }
-    } catch (e) {
+    } catch {
       setSuggestNotice({ type: 'error', message: 'Omrežna napaka.' });
     } finally {
       setIsSuggesting(false);

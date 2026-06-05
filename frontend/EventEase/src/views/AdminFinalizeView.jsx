@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import VoteResults from '../components/VoteResults';
 import CalendarPicker from '../components/CalendarPicker';
@@ -10,9 +10,11 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   
   const basicToken = searchParams.get('invite');
 
-  const [eventData, setEventData] = useState(propEventData || null);
-  const [loading, setLoading] = useState(!propEventData);
-  const [error, setError] = useState(null);
+  // Local state holds only data fetched from the API
+  const [fetchedData, setFetchedData] = useState(null);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -22,24 +24,21 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
 
   // --- Core Data Fetching Hook ---
   useEffect(() => {
-    if (propEventData) {
-      setEventData(propEventData);
+    // Only fetch if we don't have props data AND we have a token to fetch with
+    if (propEventData || !basicToken) {
       return;
     }
 
     async function fetchAdminData() {
+      setApiLoading(true);
       try {
-        if (!basicToken) {
-          throw new Error('Manjka vabilni žeton (?invite=...) v povezavi.');
-        }
-
         const response = await fetch(`/api/polls/share/${basicToken}`);
         if (!response.ok) {
           throw new Error('Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.');
         }
         const data = await response.json();
         
-        setEventData({
+        setFetchedData({
           title: data.title,
           description: data.description,
           suggestedDates: (data.time_slots || []).map(slot => ({
@@ -67,21 +66,16 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
         ]);
 
       } catch (err) {
-        setError(err.message);
+        setApiError(err.message);
       } finally {
-        setLoading(false);
+        setApiLoading(false);
       }
     }
 
-    if (basicToken) {
-      fetchAdminData();
-    } else if (!propEventData) {
-      setError('Napačna skrbniška povezava. Manjka identifikator povabila.');
-      setLoading(false);
-    }
+    fetchAdminData();
   }, [basicToken, propEventData]);
 
-  // --- Notice Auto-Scroll Hook (MOVED UP HERE) ---
+  // --- Notice Auto-Scroll Hook ---
   useEffect(() => {
     if (notice && noticeRef.current) {
       noticeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -130,7 +124,17 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     }
   };
 
-  // --- Conditional UI Returns are now safely placed below all Hooks ---
+  // --- Derived State (Calculated instantly during render) ---
+  // 1. Determine error states
+  let error = apiError;
+  if (!propEventData && !basicToken) {
+    error = 'Napačna skrbniška povezava. Manjka identifikator povabila.';
+  }
+
+  // 2. Determine loading states
+  const loading = !propEventData && !error && (apiLoading || !fetchedData);
+
+  // --- Conditional UI Returns ---
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen text-gray-500 text-sm font-light">
@@ -148,7 +152,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     );
   }
 
-  // Safe to destructure now since we know loading is false and eventData exists
+  const eventData = propEventData || fetchedData;
   const { title, description, suggestedDates = [], votes = [] } = eventData || {};
   const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
 
@@ -284,7 +288,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             disabled={isSubmitting}
             className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 disabled:bg-gray-400 disabled:scale-100 transition shadow-sm"
           >
-            {isSubmitting ? 'Zaključujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
+            {isSubmitting ? 'Zaklujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
           </button>
         </div>
       </form>

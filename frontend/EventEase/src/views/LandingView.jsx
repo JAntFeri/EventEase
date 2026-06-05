@@ -1,4 +1,3 @@
-import React from 'react';
 
 const steps = [
   { n: '1', title: 'Ustvari brez prijave', body: 'Klikni gumb, vnesi naslov dogodka in predlagaj datume brez registracije.' },

@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS vote_options (
     UNIQUE(vote_id, time_slot_id)
 );
 
+CREATE TABLE IF NOT EXISTS slot_suggestions (
+    id UUID PRIMARY KEY,
+    poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+    suggested_by VARCHAR(100) NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'accepted', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_polls_share_token ON polls(share_token);
 CREATE INDEX IF NOT EXISTS idx_polls_admin_token ON polls(admin_token);
 CREATE INDEX IF NOT EXISTS idx_time_slots_poll_id ON time_slots(poll_id);

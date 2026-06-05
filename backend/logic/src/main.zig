@@ -3,6 +3,7 @@ const httpz = @import("httpz");
 const db_mod = @import("db.zig");
 const routes = @import("routes.zig");
 const static_handler = @import("static.zig");
+const cleanup = @import("cleanup.zig");
 
 pub const App = struct {
     db: *db_mod.Pool,
@@ -29,21 +30,25 @@ pub fn main(init: std.process.Init) !void {
     var prng = std.Random.DefaultPrng.init(seed);
     const rng = prng.random();
 
-    var app = App{ .db = pool, .io = io, .rng = rng};
+    var app = App{ .db = pool, .io = io, .rng = rng };
+
+var cleanup_thread = try std.Thread.spawn(.{}, cleanup.cleanupLoop, .{ pool, io, 60 * 60 * 1000 });
+defer cleanup_thread.join();
 
     var server = try httpz.Server(*App).init(io, gpa, .{
-        .address = .localhost(3000),
+        .address = .all(3000),
     }, &app);
     defer server.deinit();
+    defer server.stop();
 
     var router = try server.router(.{});
 
     router.post("/api/polls", routes.createPoll, .{});
     router.get("/api/polls/share/:share_token", routes.getPoll, .{});
     router.post("/api/polls/share/:share_token/vote", routes.submitVote, .{});
+    router.post("/api/polls/share/:share_token/suggest", routes.suggestDate, .{});
     router.post("/api/polls/admin/:admin_token/finalize", routes.finalizePoll, .{});
     router.all("/*", static_handler.handle, .{});
 
-    std.debug.print("listening http://localhost:3000/\n", .{});
     try server.listen();
 }

@@ -90,6 +90,16 @@ Praktikum2/
 | [http.zig](https://github.com/karlseguin/http.zig) | git |
 | [pg.zig](https://github.com/karlseguin/pg.zig) | git |
 
+
+###
+ API poti:
+ ```
+ router.post("/api/polls", routes.createPoll, .{});
+    router.get("/api/polls/share/:share_token", routes.getPoll, .{});
+    router.post("/api/polls/share/:share_token/vote", routes.submitVote, .{});
+    router.post("/api/polls/admin/:admin_token/finalize", routes.finalizePoll, .{});
+    router.all("/*", static_handler.handle, .{});
+ ```
 </details>
 
 <details>

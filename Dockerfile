@@ -21,7 +21,7 @@ WORKDIR /app/frontend
 
 COPY frontend/EventEase/package.json frontend/EventEase/package-lock.json* ./
 
-RUN --mount=type=cache,id=${{RAILWAY_BUILD_ID}}-npm,target=/root/.npm npm ci
+RUN npm ci
 
 COPY frontend/EventEase/ .
 

@@ -21,7 +21,7 @@ WORKDIR /app/frontend
 
 COPY frontend/EventEase/package.json frontend/EventEase/package-lock.json* ./
 
-RUN --mount=type=cache,id=npm,target=/root/.npm npm ci
+RUN --mount=type=cache,id=${cacheKey}-npm,target=/root/.npm npm ci
 
 COPY frontend/EventEase/ .
 

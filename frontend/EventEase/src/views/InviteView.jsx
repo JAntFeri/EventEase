@@ -57,6 +57,21 @@ export default function InviteView({ eventData }) {
     }
     setSuggestNotice(null);
 
+    // --- FIXED: Ensure every item is strictly a 'YYYY-MM-DD' string payload ---
+    const cleanedDates = suggestionDates.map(d => {
+      if (!d) return null;
+      if (typeof d === 'string') {
+        return d.split('T')[0]; // strip time if present
+      }
+      if (d instanceof Date) {
+        return d.toISOString().split('T')[0];
+      }
+      if (d.date) {
+        return String(d.date).split('T')[0];
+      }
+      return String(d);
+    }).filter(Boolean);
+
     setIsSuggesting(true);
     try {
       const response = await fetch(`/api/polls/share/${share_token}/suggest`, {
@@ -64,7 +79,7 @@ export default function InviteView({ eventData }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           suggested_by: guestName.trim(),
-          dates: suggestionDates,
+          dates: cleanedDates, // Send the completely clean array of primitive strings
         }),
       });
       if (response.ok) {

@@ -42,7 +42,9 @@ pub fn main(init: std.process.Init) !void {
     router.post("/api/polls", routes.createPoll, .{});
     router.get("/api/polls/share/:share_token", routes.getPoll, .{});
     router.post("/api/polls/share/:share_token/vote", routes.submitVote, .{});
+    router.post("/api/polls/share/:share_token/suggest", routes.suggestSlots, .{});
     router.post("/api/polls/admin/:admin_token/finalize", routes.finalizePoll, .{});
+    router.get("/api/polls/admin/:admin_token", routes.getAdminPoll, .{});
     router.all("/*", static_handler.handle, .{});
 
     try server.listen();

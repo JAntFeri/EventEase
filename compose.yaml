@@ -7,6 +7,8 @@ services:
       - "8080:8080"
     environment:
       DATABASE_URL: postgresql://admin:admin@db:5432/eventeasedb
+    networks:
+      - eventease-net
     depends_on:
       db:
         condition: service_healthy
@@ -22,6 +24,8 @@ services:
       POSTGRES_DB: eventeasedb
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - eventease-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d eventeasedb"]
       interval: 5s
@@ -30,3 +34,7 @@ services:
 
 volumes:
   db-data:
+
+networks:
+  eventease-net:
+    driver: bridge

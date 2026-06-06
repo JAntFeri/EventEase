@@ -25,14 +25,13 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   // --- Core Data Fetching Hook ---
   useEffect(() => {
     // Only fetch if we don't have props data AND we have a token to fetch with
-    if (propEventData || !basicToken) {
-      return;
-    }
-
+      if (propEventData || !adminToken) {
+        return;
+      }
     async function fetchAdminData() {
       setApiLoading(true);
       try {
-        const response = await fetch(`/api/polls/share/${basicToken}`);
+        const response = await fetch(`/api/polls/admin/${adminToken}`);
         if (!response.ok) {
           throw new Error('Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.');
         }
@@ -43,27 +42,13 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           description: data.description,
           suggestedDates: (data.time_slots || []).map(slot => ({
             id: slot.id,
-            date: slot.start_time.replace('T', ' ').split(' ')[0] 
+            date: slot.start_time.replace('T', ' ').split(' ')[0]
           })),
           votes: data.votes || []
         });
 
-        setSuggestions([
-          {
-            id: 'mock-1',
-            poll_id: 'mock',
-            suggested_by: 'Janez',
-            start_time: '2026-06-20T00:00:00Z',
-            status: 'pending'
-          },
-          {
-            id: 'mock-2',
-            poll_id: 'mock',
-            suggested_by: 'Ana',
-            start_time: '2026-06-25T00:00:00Z',
-            status: 'pending'
-          }
-        ]);
+          setSuggestions(data.suggestions || []); 
+
 
       } catch (err) {
         setApiError(err.message);
@@ -73,7 +58,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     }
 
     fetchAdminData();
-  }, [basicToken, propEventData]);
+  }, [adminToken, propEventData]);
 
   // --- Notice Auto-Scroll Hook ---
   useEffect(() => {

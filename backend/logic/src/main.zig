@@ -29,12 +29,13 @@ pub fn main(init: std.process.Init) !void {
     var prng = std.Random.DefaultPrng.init(seed);
     const rng = prng.random();
 
-    var app = App{ .db = pool, .io = io, .rng = rng};
+    var app = App{ .db = pool, .io = io, .rng = rng };
 
     var server = try httpz.Server(*App).init(io, gpa, .{
-        .address = .localhost(3000),
+        .address = .all(3000),
     }, &app);
     defer server.deinit();
+    defer server.stop();
 
     var router = try server.router(.{});
 
@@ -44,6 +45,5 @@ pub fn main(init: std.process.Init) !void {
     router.post("/api/polls/admin/:admin_token/finalize", routes.finalizePoll, .{});
     router.all("/*", static_handler.handle, .{});
 
-    std.debug.print("listening http://localhost:3000/\n", .{});
     try server.listen();
 }

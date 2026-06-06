@@ -2,9 +2,6 @@ const std = @import("std");
 const httpz = @import("httpz");
 const App = @import("main.zig").App;
 
-// ----------------------------------------------------------------------------
-// UUID helpers (all string-based)
-// ----------------------------------------------------------------------------
 fn uuidV4Hex(arena: std.mem.Allocator, rng: std.Random) ![]const u8 {
     var bytes: [16]u8 = undefined;
     rng.bytes(&bytes);
@@ -31,9 +28,6 @@ fn jsonParse(comptime T: type, arena: std.mem.Allocator, body: []const u8) !T {
     return std.json.parseFromSliceLeaky(T, arena, body, .{ .ignore_unknown_fields = true });
 }
 
-// ----------------------------------------------------------------------------
-// Email helpers
-// ----------------------------------------------------------------------------
 fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const u8, subject: []const u8, body: []const u8) !void {
     const content = try std.fmt.allocPrint(alloc,
         \\From: poll@yourserver.com
@@ -61,7 +55,7 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const 
     try writer.flush();
     try file.sync(io);
 
-    const cmd = try std.fmt.allocPrint(alloc, "msmtp --timeout=5 -t < '{s}'", .{filename});
+    const cmd = try std.fmt.allocPrint(alloc, "msmtp --file=./.msmtprc --timeout=5 -t < '{s}'", .{filename});
     defer alloc.free(cmd);
 
     const result = try std.process.run(alloc, io, .{
@@ -133,9 +127,6 @@ fn sendParticipantFinalizationEmail(alloc: std.mem.Allocator, io: std.Io, rng: s
     try sendEmail(alloc, io, rng, participant_email, subject, body);
 }
 
-// ----------------------------------------------------------------------------
-// Types used in route handlers
-// ----------------------------------------------------------------------------
 const Slot = struct { id: []const u8, start_time: []const u8, end_time: []const u8 };
 const VoteOption = struct { slot_id: []const u8, status: []const u8 };
 const VoteRecord = struct {
@@ -145,9 +136,6 @@ const VoteRecord = struct {
 };
 const RawVote = struct { id: []const u8, name: []const u8, email: []const u8 };
 
-// ----------------------------------------------------------------------------
-// Route handlers
-// ----------------------------------------------------------------------------
 pub fn createPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const body = req.body() orelse {
         res.status = 400;
@@ -203,17 +191,10 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
 
     // ----- Poll row -----
     const poll_id_str, const title, const description, const organizer_email, const is_finalized, const final_slot_id_str = blk: {
-        var row = conn.row(
+        var row = try conn.row(
             \\ SELECT id::text, title, description, organizer_email, is_finalized, final_slot_id::text
             \\ FROM polls WHERE share_token = $1
-        , .{share_token_hex}) catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [polls SELECT] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [polls SELECT] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        } orelse {
+        , .{share_token_hex}) orelse {
             res.status = 404;
             res.body = "Poll not found";
             return;
@@ -232,29 +213,15 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
 
     // ----- Time slots -----
     const slots = blk: {
-        var result = conn.query(
+        var result = try conn.query(
             \\ SELECT id::text, start_time::text, end_time::text
             \\ FROM time_slots WHERE poll_id = $1 ORDER BY start_time
-        , .{poll_id_str}) catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [time_slots SELECT] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [time_slots SELECT] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        };
+        , .{poll_id_str});
         defer result.deinit();
 
         var list = std.ArrayListUnmanaged(Slot){ .items = &.{}, .capacity = 0 };
         defer list.deinit(res.arena);
-        while (result.next() catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [time_slots next] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [time_slots next] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        }) |row| {
+        while (try result.next()) |row| {
             try list.append(res.arena, .{
                 .id = try res.arena.dupe(u8, try row.get([]const u8, 0)),
                 .start_time = try res.arena.dupe(u8, try row.get([]const u8, 1)),
@@ -266,29 +233,15 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
 
     // ----- Votes + options -----
     const votes = blk: {
-        var votes_result = conn.query(
+        var votes_result = try conn.query(
             \\ SELECT id::text, participant_name, participant_email
             \\ FROM votes WHERE poll_id = $1 ORDER BY created_at
-        , .{poll_id_str}) catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [votes SELECT] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [votes SELECT] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        };
+        , .{poll_id_str});
         defer votes_result.deinit();
 
         var raw_votes = std.ArrayListUnmanaged(RawVote){ .items = &.{}, .capacity = 0 };
         defer raw_votes.deinit(res.arena);
-        while (votes_result.next() catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [votes next] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [votes next] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        }) |vote_row| {
+        while (try votes_result.next()) |vote_row| {
             try raw_votes.append(res.arena, .{
                 .id = try res.arena.dupe(u8, try vote_row.get([]const u8, 0)),
                 .name = try res.arena.dupe(u8, try vote_row.get([]const u8, 1)),
@@ -299,55 +252,36 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         var votes_list = std.ArrayListUnmanaged(VoteRecord){ .items = &.{}, .capacity = 0 };
         defer votes_list.deinit(res.arena);
         for (raw_votes.items) |raw_vote| {
-            var options_result = conn.query(
+            var options_result = try conn.query(
                 \\ SELECT time_slot_id::text, status
                 \\ FROM vote_options WHERE vote_id = $1 ORDER BY time_slot_id
-            , .{raw_vote.id}) catch |err| {
-                if (conn.err) |pg_err| {
-                    std.log.err("getPoll [vote_options SELECT] PG error: {s}", .{pg_err.message});
-                } else {
-                    std.log.err("getPoll [vote_options SELECT] failed: {s}", .{@errorName(err)});
-                }
-                return err;
-            };
+            , .{raw_vote.id});
             defer options_result.deinit();
 
             var options_list = std.ArrayListUnmanaged(VoteOption){ .items = &.{}, .capacity = 0 };
-            defer options_list.deinit(res.arena);
-            while (options_result.next() catch |err| {
-                if (conn.err) |pg_err| {
-                    std.log.err("getPoll [vote_options next] PG error: {s}", .{pg_err.message});
-                } else {
-                    std.log.err("getPoll [vote_options next] failed: {s}", .{@errorName(err)});
-                }
-                return err;
-            }) |opt_row| {
+            while (try options_result.next()) |opt_row| {
                 try options_list.append(res.arena, .{
                     .slot_id = try res.arena.dupe(u8, try opt_row.get([]const u8, 0)),
                     .status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1)),
                 });
             }
+            // Transfer ownership of the options slice to the arena
+            const options_slice = try options_list.toOwnedSlice(res.arena);
             try votes_list.append(res.arena, .{
                 .participant_name = raw_vote.name,
                 .participant_email = raw_vote.email,
-                .date_votes = options_list.items,
+                .date_votes = options_slice,
             });
         }
         break :blk try votes_list.toOwnedSlice(res.arena);
     };
 
+    // ----- Suggestions -----
     const suggestions = blk: {
-        var result = conn.query(
+        var result = try conn.query(
             \\ SELECT id::text, suggested_by, start_time::text, end_time::text, status
             \\ FROM slot_suggestions WHERE poll_id = $1 ORDER BY created_at
-        , .{poll_id_str}) catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [suggestions SELECT] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [suggestions SELECT] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        };
+        , .{poll_id_str});
         defer result.deinit();
 
         var list = std.ArrayListUnmanaged(struct {
@@ -358,15 +292,7 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
             status: []const u8,
         }){ .items = &.{}, .capacity = 0 };
         defer list.deinit(res.arena);
-
-        while (result.next() catch |err| {
-            if (conn.err) |pg_err| {
-                std.log.err("getPoll [suggestions next] PG error: {s}", .{pg_err.message});
-            } else {
-                std.log.err("getPoll [suggestions next] failed: {s}", .{@errorName(err)});
-            }
-            return err;
-        }) |row| {
+        while (try result.next()) |row| {
             try list.append(res.arena, .{
                 .id = try res.arena.dupe(u8, try row.get([]const u8, 0)),
                 .suggested_by = try res.arena.dupe(u8, try row.get([]const u8, 1)),

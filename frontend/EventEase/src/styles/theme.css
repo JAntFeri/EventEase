@@ -8,6 +8,18 @@
   --color-on-primary: #FFFFFF;
   --color-text: #111827;
 }
+@media (prefers-color-scheme: dark) {
+
+  :root {
+  --color-primary: #A9AFCB; /* primary purple */
+  --color-bg: #1A1A1A; /* background / secondary */
+  --color-accent-1: #804800; /* accent light yellow */
+  --color-accent-2: #A55A03; /* accent orange */
+  --color-accent-3: #BD4800; /* accent strong orange */
+  --color-on-primary: #1A1A1A;
+  --color-text: #EEECEC;
+  }
+}
 
 /* Basic helpers used across components */
 .bg-primary { background-color: var(--color-primary) !important; }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function CalendarPicker({
-  selectedDates = [], // Handles both formats dynamically!
+  selectedDates = [],
   onChange,
   dateStatuses = {},
   onDateStatusesChange,
@@ -18,18 +18,8 @@ export default function CalendarPicker({
   const month = currentDate.getMonth();
 
   const monthNames = [
-    "Januar",
-    "Februar",
-    "Marec",
-    "April",
-    "Maj",
-    "Junij",
-    "Julij",
-    "Avgust",
-    "September",
-    "Oktober",
-    "November",
-    "December",
+    "Januar", "Februar", "Marec", "April", "Maj", "Junij",
+    "Julij", "Avgust", "September", "Oktober", "November", "December",
   ];
 
   const weekDays = ["Po", "To", "Sr", "Če", "Pe", "So", "Ne"];
@@ -38,7 +28,7 @@ export default function CalendarPicker({
   const blankCells = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const getDateStr = (item) => {
+  const getDateStr = (item) => {
     if (!item) return "";
     if (item.date) return item.date;
     if (item.start_time) {
@@ -53,13 +43,12 @@ export default function CalendarPicker({
     if (!item) return "";
     if (item.time) return item.time;
     if (item.start_time) {
-      // Handle both "2026-06-15T14:00:00" and "2026-06-15 14:00:00+00"
       const timePart = item.start_time.includes("T")
         ? item.start_time.split("T")[1]
         : item.start_time.split(" ")[1];
-        if (timePart) return timePart.substring(0, 5);
-      }
-      return "12:00";
+      if (timePart) return timePart.substring(0, 5);
+    }
+    return "12:00";
   };
 
   const selectedDateStrings = selectedDates.map(getDateStr);
@@ -102,6 +91,7 @@ export default function CalendarPicker({
       if (onDateStatusesChange) onDateStatusesChange(updatedStatuses);
       return;
     }
+
     const isAlreadySelected = selectedDateStrings.includes(dateStr);
 
     if (isAlreadySelected) {
@@ -136,28 +126,28 @@ export default function CalendarPicker({
     const dateSuggestions = suggestions.filter((s) => s.date === dateKey);
     const isSuggested = dateSuggestions.length > 0;
 
-    let stateStyles = "hover:bg-gray-100 text-gray-900";
+    let stateStyles = "hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text)]";
 
     if (allowedDates) {
       if (!allowedDates.includes(dateKey)) {
-        stateStyles = "text-gray-300 cursor-not-allowed opacity-40";
+        stateStyles = "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-40";
       } else {
-      const matchedSlot = selectedDates.find(d => getDateStr(d) === dateKey);
-      const statusKey = matchedSlot?.id || dateKey;
-      const dateStatus = dateStatuses[statusKey] || "no";
-      if (dateStatus === "yes") {
-        stateStyles = "bg-green-500 text-white font-medium hover:bg-green-600";
-      } else if (dateStatus === "if_needed") {
-        stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
-      } else {
-        stateStyles = "bg-red-500 text-white font-medium hover:bg-red-600";
-      }
+        const matchedSlot = selectedDates.find(d => getDateStr(d) === dateKey);
+        const statusKey = matchedSlot?.id || dateKey;
+        const dateStatus = dateStatuses[statusKey] || "no";
+        if (dateStatus === "yes") {
+          stateStyles = "bg-green-500 text-white font-medium hover:bg-green-600";
+        } else if (dateStatus === "if_needed") {
+          stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
+        } else {
+          stateStyles = "bg-red-500 text-white font-medium hover:bg-red-600";
+        }
       }
     } else if (selectedDateStrings.includes(dateKey)) {
       stateStyles =
-        "bg-primary text-on-primary font-medium hover:opacity-95 ring-2 ring-offset-1 ring-primary";
+        "bg-[var(--color-primary)] text-[var(--color-on-primary)] font-medium hover:opacity-95 ring-2 ring-offset-1 ring-[var(--color-primary)]";
     } else if (isSuggested) {
-      stateStyles = "ring-2 ring-accent-1 text-gray-900 hover:bg-gray-100";
+      stateStyles = "ring-2 ring-[var(--color-accent-1)] text-[var(--color-text)] hover:bg-[var(--color-accent-1)]/20";
     }
 
     days.push({
@@ -178,22 +168,22 @@ export default function CalendarPicker({
     : lastSelectedTime;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 w-full max-w-sm mx-auto shadow-sm transition-all duration-200">
-      {/* Month Navigation */}
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 w-full max-w-sm mx-auto shadow-sm transition-all duration-200">
+      {/* Month Navigation with accent-2 hover */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
-          className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition"
+          className="p-1.5 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-[var(--color-accent-1)]/20 hover:text-[var(--color-primary)] hover:border-[var(--color-accent-1)] transition"
           onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
         >
           &larr;
         </button>
-        <span className="text-sm font-semibold text-gray-900">
+        <span className="text-sm font-semibold text-[var(--color-text)]">
           {monthNames[month]} {year}
         </span>
         <button
           type="button"
-          className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition"
+          className="p-1.5 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-[var(--color-accent-1)]/20 hover:text-[var(--color-primary)] hover:border-[var(--color-accent-1)] transition"
           onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
         >
           &rarr;
@@ -201,7 +191,7 @@ export default function CalendarPicker({
       </div>
 
       {/* Weekday Headers */}
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-400 mb-2">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-400 dark:text-gray-500 mb-2">
         {weekDays.map((wd) => (
           <span key={wd}>{wd}</span>
         ))}
@@ -239,7 +229,7 @@ export default function CalendarPicker({
 
               {item.isSuggested && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10 hidden group-hover:block w-max max-w-[140px]">
-                  <div className="bg-gray-900 text-white text-[10px] rounded px-2 py-1 leading-snug shadow-md">
+                  <div className="bg-gray-900 dark:bg-gray-700 text-white text-[10px] rounded px-2 py-1 leading-snug shadow-md border border-[var(--color-accent-1)]">
                     {item.dateSuggestions.map((s) => s.suggested_by).join(", ")}
                   </div>
                 </div>
@@ -249,14 +239,14 @@ export default function CalendarPicker({
         })}
       </div>
 
-      {/* Inline Time Picker */}
+      {/* Inline Time Picker with accent-2 focus ring */}
       {activeSelection && (
-        <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between animate-fadeIn">
+        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">
               Izbrana ura za
             </p>
-            <p className="text-xs font-semibold text-gray-800">
+            <p className="text-xs font-semibold text-[var(--color-text)]">
               {activeDateStr.split("-")[2]}.{" "}
               {monthNames[parseInt(activeDateStr.split("-")[1]) - 1]}
             </p>
@@ -264,13 +254,13 @@ export default function CalendarPicker({
           <div className="flex items-center gap-2">
             <input
               type="time"
-              className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-black transition"
+              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1 text-sm font-medium text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-2)] focus:border-transparent transition"
               value={activeTimeValue}
               onChange={(e) => handleTimeChange(activeDateStr, e.target.value)}
             />
             <button
               type="button"
-              className="text-xs bg-gray-900 text-white px-2.5 py-1.5 rounded-lg font-medium hover:bg-gray-800 transition"
+              className="text-xs bg-[var(--color-primary)] text-[var(--color-on-primary)] px-2.5 py-1.5 rounded-lg font-medium hover:bg-[var(--color-accent-3)] transition"
               onClick={() => setActiveDateStr(null)}
             >
               Potrdi
@@ -280,9 +270,9 @@ export default function CalendarPicker({
       )}
 
       {isPollMode && (
-        <div className="text-xs text-gray-600 mt-3 font-light space-y-1">
+        <div className="text-xs text-[var(--color-text)]/80 mt-3 font-light space-y-1">
           {allowedDates ? (
-            <div className="flex justify-center gap-4 border-t border-gray-100 pt-3">
+            <div className="flex justify-center gap-4 border-t border-gray-100 dark:border-gray-800 pt-3">
               <p className="flex items-center gap-1.5">
                 <span className="h-3 w-3 rounded-sm bg-red-500" />
                 Ne
@@ -297,7 +287,7 @@ export default function CalendarPicker({
               </p>
             </div>
           ) : (
-            <p className="text-center border-t border-gray-100 pt-3">
+            <p className="text-center border-t border-gray-100 dark:border-gray-800 pt-3">
               Izberete lahko več datumov za glasovanje.
             </p>
           )}

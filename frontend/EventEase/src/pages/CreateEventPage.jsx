@@ -58,8 +58,7 @@ export default function CreateEventWizard({ onCancel}) {
     setEmailSuccess(false);
 
     try {
-      // TTUKI BO ŠOU API KLIC ZA EMAIL
-      /*const response = await fetch("/api/polls/share-email", {
+      const response = await fetch("/api/polls/share-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -67,12 +66,12 @@ export default function CreateEventWizard({ onCancel}) {
           title: formData.title,
           recipients: recipientEmails,
         }),
-      })*/
+      });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) throw new Error("Napaka na strežniku.");
 
       setEmailSuccess(true);
-      setRecipientEmails([]); 
+      setRecipientEmails([]);
     } catch (error) {
       console.error("Napaka pri pošiljanju e-pošte:", error);
       alert("Prišlo je do napake pri pošiljanju vabil.");

@@ -51,6 +51,7 @@ pub fn main(init: std.process.Init) !void {
     router.post("/api/polls/admin/:admin_token/finalize", routes.finalizePoll, .{});
     router.get("/api/polls/admin/:admin_token", routes.getAdminPoll, .{});
     router.post("/api/polls/admin/:admin_token/accept-suggestion", routes.acceptSuggestion, .{});
+    router.post("/api/polls/share-email", routes.shareEmail, .{});
     router.all("/*", static_handler.handle, .{});
 
     try server.listen();

@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import VoteResults from '../components/VoteResults';
-import CalendarPicker from '../components/CalendarPicker';
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import VoteResults from "../components/VoteResults";
+import CalendarPicker from "../components/CalendarPicker";
 
-export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
-  const { adminToken } = useParams(); 
-  const [searchParams] = useSearchParams(); 
+export default function AdminFinalizeView({
+  eventData: propEventData,
+  onBack,
+}) {
+  const { adminToken } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
-  const basicToken = searchParams.get('invite');
+
+  const basicToken = searchParams.get("invite");
 
   // Local state holds only data fetched from the API
   const [fetchedData, setFetchedData] = useState(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
-  
+
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -25,31 +28,38 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   // --- Core Data Fetching Hook ---
   useEffect(() => {
     // Only fetch if we don't have props data AND we have a token to fetch with
-      if (propEventData || !adminToken) {
-        return;
-      }
+    if (propEventData || !adminToken) {
+      return;
+    }
     async function fetchAdminData() {
       setApiLoading(true);
       try {
         const response = await fetch(`/api/polls/admin/${adminToken}`);
         if (!response.ok) {
-          throw new Error('Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.');
+          throw new Error(
+            "Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.",
+          );
         }
         const data = await response.json();
-        
+
         setFetchedData({
           title: data.title,
           description: data.description,
-          suggestedDates: (data.time_slots || []).map(slot => ({
+          suggestedDates: (data.time_slots || []).map((slot) => ({
             id: slot.id,
-            date: slot.start_time.replace('T', ' ').split(' ')[0]
+            date: slot.start_time.replace(" ", "T").split("T")[0],
+            start_time: slot.start_time.replace(" ", "T").split("+")[0],
+            end_time: slot.end_time,
           })),
-          votes: data.votes || []
+          votes: data.votes || [],
         });
 
-          setSuggestions(data.suggestions || []); 
-
-
+        setSuggestions(
+          (data.suggestions || []).map((s) => ({
+            ...s,
+            start_time: s.start_time.replace(" ", "T").split("+")[0],
+          })),
+        );
       } catch (err) {
         setApiError(err.message);
       } finally {
@@ -63,26 +73,80 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   // --- Notice Auto-Scroll Hook ---
   useEffect(() => {
     if (notice && noticeRef.current) {
-      noticeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      noticeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [notice]);
 
-  // --- Handlers & Helpers ---
   const handleSuggestionAction = async (suggestionId, action) => {
-    setSuggestions(prev => prev.map(s =>
-      s.id === suggestionId ? { ...s, status: action === 'accept' ? 'accepted' : 'rejected' } : s
-    ));
+    if (action === "accept") {
+      try {
+        const response = await fetch(
+          `/api/polls/admin/${adminToken}/accept-suggestion`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ suggestion_id: suggestionId }),
+          },
+        );
+        if (!response.ok) {
+          setNotice({
+            type: "error",
+            message: "Napaka pri sprejemu predloga.",
+          });
+          return;
+        }
+        // Refetch everything using the existing getAdminPoll endpoint
+        const refreshed = await fetch(`/api/polls/admin/${adminToken}`);
+        if (refreshed.ok) {
+          const data = await refreshed.json();
+          setFetchedData({
+            title: data.title,
+            description: data.description,
+            suggestedDates: (data.time_slots || []).map((slot) => ({
+              id: slot.id,
+              date: slot.start_time.replace(" ", "T").split("T")[0],
+              start_time: slot.start_time.replace(" ", "T").split("+")[0],
+              end_time: slot.end_time,
+            })),
+            votes: data.votes || [],
+          });
+          setSuggestions(
+            (data.suggestions || []).map((s) => ({
+              ...s,
+              start_time: s.start_time.replace(" ", "T").split("+")[0],
+            })),
+          );
+        }
+      } catch {
+        setNotice({ type: "error", message: "Omrežna napaka." });
+        return;
+      }
+    }
+
+    setSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === suggestionId
+          ? { ...s, status: action === "accept" ? "accepted" : "rejected" }
+          : s,
+      ),
+    );
     setPendingSuggestion(null);
   };
 
   const handleFinalize = async (e) => {
     e.preventDefault();
     if (!adminToken) {
-      setNotice({ type: 'error', message: 'Nimate skrbniških pravic za zaključek tega dogodka.' });
+      setNotice({
+        type: "error",
+        message: "Nimate skrbniških pravic za zaključek tega dogodka.",
+      });
       return;
     }
     if (!selectedSlotId) {
-      setNotice({ type: 'error', message: 'Prosimo, izberite končni termin za zaklep dogodka.' });
+      setNotice({
+        type: "error",
+        message: "Prosimo, izberite končni termin za zaklep dogodka.",
+      });
       return;
     }
     setNotice(null);
@@ -90,20 +154,30 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/polls/admin/${adminToken}/finalize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ final_slot_id: selectedSlotId })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ final_slot_id: selectedSlotId }),
       });
 
       if (response.ok) {
-        setNotice({ type: 'success', message: 'Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko.' });
-        setTimeout(() => navigate('/'), 1200);
+        setNotice({
+          type: "success",
+          message:
+            "Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko.",
+        });
+        setTimeout(() => navigate("/"), 1200);
       } else {
-        setNotice({ type: 'error', message: 'Napaka na strežniku pri zaključevanju glasovanja.' });
+        setNotice({
+          type: "error",
+          message: "Napaka na strežniku pri zaključevanju glasovanja.",
+        });
       }
     } catch (error) {
       console.error("Napaka pri zaključevanju polla:", error);
-      setNotice({ type: 'error', message: 'Omrežna napaka pri zaključevanju.' });
+      setNotice({
+        type: "error",
+        message: "Omrežna napaka pri zaključevanju.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +187,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   // 1. Determine error states
   let error = apiError;
   if (!propEventData && !basicToken) {
-    error = 'Napačna skrbniška povezava. Manjka identifikator povabila.';
+    error = "Napačna skrbniška povezava. Manjka identifikator povabila.";
   }
 
   // 2. Determine loading states
@@ -131,21 +205,31 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   if (error) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
-        <h2 className="text-xl font-serif text-gray-900 mb-2">Napaka pri dostopu</h2>
+        <h2 className="text-xl font-serif text-gray-900 mb-2">
+          Napaka pri dostopu
+        </h2>
         <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
       </div>
     );
   }
 
   const eventData = propEventData || fetchedData;
-  const { title, description, suggestedDates = [], votes = [] } = eventData || {};
-  const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
+  const {
+    title,
+    description,
+    suggestedDates = [],
+    votes = [],
+  } = eventData || {};
+  const pendingSuggestions = suggestions.filter((s) => s.status === "pending");
 
   return (
     <div className="py-12 md:py-16 px-4 max-w-2xl mx-auto">
       <div className="mb-8 border-b border-gray-100 pb-6">
         {onBack && (
-          <button onClick={onBack} className="text-xs text-gray-500 hover:text-black mb-4 flex items-center gap-1 transition">
+          <button
+            onClick={onBack}
+            className="text-xs text-gray-500 hover:text-black mb-4 flex items-center gap-1 transition"
+          >
             ← Nazaj
           </button>
         )}
@@ -154,7 +238,9 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             Skrbniški pogled (Admin)
           </span>
         </div>
-        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">{title}</h1>
+        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">
+          {title}
+        </h1>
         {description && (
           <p className="text-sm text-gray-600 font-light mt-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
             {description}
@@ -163,7 +249,10 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
       </div>
 
       {notice && (
-        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+        <div
+          ref={noticeRef}
+          className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}
+        >
           {notice.message}
         </div>
       )}
@@ -175,32 +264,46 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             Predlogi datumov udeležencev
           </h2>
           <p className="text-xs text-blue-600 font-light mb-3">
-            Modro označeni datumi so predlogi udeležencev. Kliknite na datum za sprejem ali zavrnitev.
+            Modro označeni datumi so predlogi udeležencev. Kliknite na datum za
+            sprejem ali zavrnitev.
           </p>
           <CalendarPicker
-            suggestions={pendingSuggestions.map(s => ({
+            selectedDates={pendingSuggestions.map((s) => ({
               id: s.id,
-              date: s.start_time.split('T')[0],
-              suggested_by: s.suggested_by
+              date: s.start_time.split("T")[0],
+              start_time: s.start_time,
+              end_time: s.end_time,
             }))}
-            onSuggestionSelect={(date, dateSuggestions) => setPendingSuggestion(dateSuggestions[0])}
+            suggestions={pendingSuggestions.map((s) => ({
+              id: s.id,
+              date: s.start_time.split("T")[0],
+              suggested_by: s.suggested_by,
+            }))}
+            onSuggestionSelect={(date, dateSuggestions) =>
+              setPendingSuggestion(dateSuggestions[0])
+            }
           />
           {pendingSuggestion && (
             <div className="mt-3 p-3 bg-white border border-blue-200 rounded-lg">
               <p className="text-sm text-gray-800 mb-2">
-                Predlog od <strong>{pendingSuggestion.suggested_by}</strong>: {pendingSuggestion.date}
+                Predlog od <strong>{pendingSuggestion.suggested_by}</strong>:{" "}
+                {pendingSuggestion.start_time?.split("T")[0]}
               </p>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSuggestionAction(pendingSuggestion.id, 'accept')}
+                  onClick={() =>
+                    handleSuggestionAction(pendingSuggestion.id, "accept")
+                  }
                   className="text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition"
                 >
                   Sprejmi → dodaj v poll
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSuggestionAction(pendingSuggestion.id, 'reject')}
+                  onClick={() =>
+                    handleSuggestionAction(pendingSuggestion.id, "reject")
+                  }
                   className="text-xs text-gray-700 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-md transition"
                 >
                   Zavrni
@@ -224,7 +327,8 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             Trenutni rezultati glasovanja
           </label>
           <p className="text-xs text-gray-400 font-light mb-3">
-            Preglejte odgovore oddane s strani uporabnikov in izberite končni potrjen termin za ta dogodek.
+            Preglejte odgovore oddane s strani uporabnikov in izberite končni
+            potrjen termin za ta dogodek.
           </p>
         </div>
 
@@ -236,26 +340,25 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             {suggestedDates.map((slot) => {
               const isChecked = selectedSlotId === slot.id;
               return (
-                <div 
-                  key={slot.id} 
+                <div
+                  key={slot.id}
                   className={`flex items-start gap-3 p-2 rounded-xl transition-colors ${
-                    isChecked ? 'bg-amber-50/60 ring-1 ring-amber-200' : 'hover:bg-gray-50'
+                    isChecked
+                      ? "bg-amber-50/60 ring-1 ring-amber-200"
+                      : "hover:bg-gray-50"
                   }`}
                 >
                   <div className="pt-4 pl-2">
-                    <input 
-                      type="radio" 
-                      name="admin-finalize-slot" 
+                    <input
+                      type="radio"
+                      name="admin-finalize-slot"
                       className="w-5 h-5 border-gray-300 text-amber-600 focus:ring-amber-500 accent-amber-600 cursor-pointer"
                       checked={isChecked}
                       onChange={() => setSelectedSlotId(slot.id)}
                     />
                   </div>
                   <div className="flex-1 pointer-events-none">
-                    <VoteResults 
-                      suggestedDates={[slot]} 
-                      votes={votes} 
-                    />
+                    <VoteResults suggestedDates={[slot]} votes={votes} />
                   </div>
                 </div>
               );
@@ -264,16 +367,20 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
         </div>
 
         <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs rounded-lg p-3 font-light leading-relaxed">
-          <strong>Opozorilo:</strong> Izbira in potrditev termina bosta trajno zaključili glasovanje. Sistem bo samodejno poslal obvestila z datoteko koledarja vsem prijavljenim udeležencem.
+          <strong>Opozorilo:</strong> Izbira in potrditev termina bosta trajno
+          zaključili glasovanje. Sistem bo samodejno poslal obvestila z datoteko
+          koledarja vsem prijavljenim udeležencem.
         </div>
 
         <div className="pt-2">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting}
             className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 disabled:bg-gray-400 disabled:scale-100 transition shadow-sm"
           >
-            {isSubmitting ? 'Zaklujem glasovanje...' : 'Potrdi izbran termin in obvesti vse'}
+            {isSubmitting
+              ? "Zaklujem glasovanje..."
+              : "Potrdi izbran termin in obvesti vse"}
           </button>
         </div>
       </form>

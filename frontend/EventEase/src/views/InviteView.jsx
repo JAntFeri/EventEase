@@ -57,19 +57,13 @@ export default function InviteView({ eventData }) {
     }
     setSuggestNotice(null);
 
-    // --- FIXED: Ensure every item is strictly a 'YYYY-MM-DD' string payload ---
     const cleanedDates = suggestionDates.map(d => {
       if (!d) return null;
-      if (typeof d === 'string') {
-        return d.split('T')[0]; // strip time if present
-      }
-      if (d instanceof Date) {
-        return d.toISOString().split('T')[0];
-      }
-      if (d.date) {
-        return String(d.date).split('T')[0];
-      }
-      return String(d);
+      if (typeof d === 'string') return d;
+      if (d instanceof Date) return d.toISOString().split('.')[0];
+      if (d.start_time) return d.start_time; // keep the full datetime
+      if (d.date) return `${d.date}T12:00:00`;
+      return null;
     }).filter(Boolean);
 
     setIsSuggesting(true);
@@ -165,14 +159,16 @@ export default function InviteView({ eventData }) {
       }
 
       const data = await response.json();
-      const formattedSlots = (data.time_slots || [])
-        .map((slot) => {
-          if (!slot.start_time) return null;
-          const cleanDate = slot.start_time.replace("T", " ").split(" ")[0];
-          return { id: slot.id, date: cleanDate };
-        })
-        .filter(Boolean);
-
+      const formattedSlots = (data.time_slots || []).map(slot => {
+        if (!slot.start_time) return null;
+        const cleanDate = slot.start_time.replace('T', ' ').split(' ')[0];
+        return {
+          id: slot.id,
+          date: cleanDate,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+        };
+      }).filter(Boolean);
       if (!Array.isArray(data.votes)) {
         setResultsError("Backend ne vraca glasov. Preverite API odgovor.");
       }
@@ -269,9 +265,9 @@ export default function InviteView({ eventData }) {
   }
 
   const plainDisplayDates = suggestedDates.map((slot) => {
-    if (slot.start_time) return slot.start_time.split("T")[0];
-    return slot.date;
-  });
+  if (slot.start_time) return slot.start_time.split("T")[0];
+  return slot.date;
+});
   return (
     <div className="py-12 md:py-16 px-4 max-w-xl mx-auto">
       <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 py-1 px-2.5 rounded-full mb-4">

@@ -19,20 +19,16 @@ export default function InvitePage() {
         }
         const data = await response.json();
         
-        // FIX: Extract exactly the first 10 characters "YYYY-MM-DD" safely,
-        // ignoring whether the backend separates with a space or a 'T'.
         const formattedSlots = (data.time_slots || []).map(slot => {
-          if (!slot.start_time) return null;
-          
-          // Replaces 'T' or spaces to safely slice out "YYYY-MM-DD"
-          const cleanDate = slot.start_time.replace('T', ' ').split(' ')[0]; 
-          
-          return {
-            id: slot.id,
-            date: cleanDate // Guaranteed to be "2026-05-13"
-          };
-        }).filter(Boolean);
-
+            if (!slot.start_time) return null;
+            const cleanDate = slot.start_time.replace('T', ' ').split(' ')[0];
+            return {
+              id: slot.id,
+              date: cleanDate,
+              start_time: slot.start_time.replace(' ', 'T').split('+')[0], // normalize to "2026-06-15T14:00:00"
+              end_time: slot.end_time,
+            };
+          }).filter(Boolean);
         setEventData({
           share_token: token,
           title: data.title,

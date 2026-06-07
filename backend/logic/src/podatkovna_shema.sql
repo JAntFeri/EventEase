@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS  polls (
-    id UUID PRIMARY KEY, 
+CREATE TABLE IF NOT EXISTS polls (
+    id UUID PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     organizer_email VARCHAR(255) NOT NULL,
@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS  polls (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Časovni razpon
 CREATE TABLE IF NOT EXISTS time_slots (
     id UUID PRIMARY KEY,
     poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
@@ -31,22 +30,42 @@ BEGIN
     END IF;
 END $$;
 
--- 3. Glas
 CREATE TABLE IF NOT EXISTS votes (
     id UUID PRIMARY KEY,
     poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
     participant_name VARCHAR(100) NOT NULL,
+    participant_email VARCHAR(255) NOT NULL DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Možnosti glasovanja
+-- Add participant_email column if it doesn't exist (for existing databases)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'votes' AND column_name = 'participant_email'
+    ) THEN
+        ALTER TABLE votes ADD COLUMN participant_email VARCHAR(255) NOT NULL DEFAULT '';
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS vote_options (
     id UUID PRIMARY KEY,
     vote_id UUID REFERENCES votes(id) ON DELETE CASCADE,
     time_slot_id UUID REFERENCES time_slots(id) ON DELETE CASCADE,
     status VARCHAR(10) NOT NULL CHECK (status IN ('yes', 'no', 'if_need_be')),
     UNIQUE(vote_id, time_slot_id)
+);
+
+CREATE TABLE IF NOT EXISTS slot_suggestions (
+    id UUID PRIMARY KEY,
+    poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+    suggested_by VARCHAR(100) NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_polls_share_token ON polls(share_token);

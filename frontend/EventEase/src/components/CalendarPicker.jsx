@@ -18,8 +18,18 @@ export default function CalendarPicker({
   const month = currentDate.getMonth();
 
   const monthNames = [
-    "Januar", "Februar", "Marec", "April", "Maj", "Junij",
-    "Julij", "Avgust", "September", "Oktober", "November", "December",
+    "Januar",
+    "Februar",
+    "Marec",
+    "April",
+    "Maj",
+    "Junij",
+    "Julij",
+    "Avgust",
+    "September",
+    "Oktober",
+    "November",
+    "December",
   ];
 
   const weekDays = ["Po", "To", "Sr", "Če", "Pe", "So", "Ne"];
@@ -28,22 +38,28 @@ export default function CalendarPicker({
   const blankCells = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Helper: Safely normalizes variations of objects to isolate the string YYYY-MM-DD key
-  const getDateStr = (item) => {
+    const getDateStr = (item) => {
     if (!item) return "";
     if (item.date) return item.date;
-    if (item.start_time) return item.start_time.split("T")[0];
+    if (item.start_time) {
+      return item.start_time.includes("T")
+        ? item.start_time.split("T")[0]
+        : item.start_time.split(" ")[0];
+    }
     return "";
   };
 
-  // Helper: Safely extracts a clean HH:MM view fallback string
   const getTimeStr = (item) => {
     if (!item) return "";
     if (item.time) return item.time;
-    if (item.start_time && item.start_time.includes("T")) {
-      return item.start_time.split("T")[1].substring(0, 5);
-    }
-    return "12:00";
+    if (item.start_time) {
+      // Handle both "2026-06-15T14:00:00" and "2026-06-15 14:00:00+00"
+      const timePart = item.start_time.includes("T")
+        ? item.start_time.split("T")[1]
+        : item.start_time.split(" ")[1];
+        if (timePart) return timePart.substring(0, 5);
+      }
+      return "12:00";
   };
 
   const selectedDateStrings = selectedDates.map(getDateStr);
@@ -65,27 +81,33 @@ export default function CalendarPicker({
     if (allowedDates && !allowedDates.includes(dateStr)) return;
 
     if (allowedDates) {
-      const currentStatus = dateStatuses[dateStr] || "no";
+      const matchedSlot = selectedDates.find((d) => getDateStr(d) === dateStr);
+      const key = matchedSlot?.id || dateStr;
+
+      const currentStatus = dateStatuses[key] || "no";
       const nextStatus =
-        currentStatus === "no" ? "yes"
-        : currentStatus === "yes" ? "if_needed"
-        : "no";
+        currentStatus === "no"
+          ? "yes"
+          : currentStatus === "yes"
+            ? "if_needed"
+            : "no";
 
       const updatedStatuses = { ...dateStatuses };
       if (nextStatus === "no") {
-        delete updatedStatuses[dateStr];
+        delete updatedStatuses[key];
       } else {
-        updatedStatuses[dateStr] = nextStatus;
+        updatedStatuses[key] = nextStatus;
       }
 
       if (onDateStatusesChange) onDateStatusesChange(updatedStatuses);
       return;
     }
-
     const isAlreadySelected = selectedDateStrings.includes(dateStr);
 
     if (isAlreadySelected) {
-      const updatedDates = selectedDates.filter((d) => getDateStr(d) !== dateStr);
+      const updatedDates = selectedDates.filter(
+        (d) => getDateStr(d) !== dateStr,
+      );
       if (onChange) onChange(updatedDates);
       if (activeDateStr === dateStr) setActiveDateStr(null);
     } else {
@@ -120,26 +142,40 @@ export default function CalendarPicker({
       if (!allowedDates.includes(dateKey)) {
         stateStyles = "text-gray-300 cursor-not-allowed opacity-40";
       } else {
-        const dateStatus = dateStatuses[dateKey] || "no";
-        if (dateStatus === "yes") {
-          stateStyles = "bg-green-500 text-white font-medium hover:bg-green-600";
-        } else if (dateStatus === "if_needed") {
-          stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
-        } else {
-          stateStyles = "bg-white border border-red-400 text-red-600 font-medium hover:bg-red-50";
-        }
+      const matchedSlot = selectedDates.find(d => getDateStr(d) === dateKey);
+      const statusKey = matchedSlot?.id || dateKey;
+      const dateStatus = dateStatuses[statusKey] || "no";
+      if (dateStatus === "yes") {
+        stateStyles = "bg-green-500 text-white font-medium hover:bg-green-600";
+      } else if (dateStatus === "if_needed") {
+        stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
+      } else {
+        stateStyles = "bg-white border border-red-400 text-red-600 font-medium hover:bg-red-50";
+      }
       }
     } else if (selectedDateStrings.includes(dateKey)) {
-      stateStyles = "bg-black text-white font-medium hover:bg-gray-800 ring-2 ring-offset-1 ring-black";
+      stateStyles =
+        "bg-black text-white font-medium hover:bg-gray-800 ring-2 ring-offset-1 ring-black";
     } else if (isSuggested) {
       stateStyles = "ring-2 ring-blue-400 text-gray-900 hover:bg-gray-100";
     }
 
-    days.push({ type: "day", val: d, key: dateKey, stateStyles, isSuggested, dateSuggestions });
+    days.push({
+      type: "day",
+      val: d,
+      key: dateKey,
+      stateStyles,
+      isSuggested,
+      dateSuggestions,
+    });
   }
 
-  const activeSelection = selectedDates.find((d) => getDateStr(d) === activeDateStr);
-  const activeTimeValue = activeSelection ? getTimeStr(activeSelection) : lastSelectedTime;
+  const activeSelection = selectedDates.find(
+    (d) => getDateStr(d) === activeDateStr,
+  );
+  const activeTimeValue = activeSelection
+    ? getTimeStr(activeSelection)
+    : lastSelectedTime;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 w-full max-w-sm mx-auto shadow-sm transition-all duration-200">
@@ -174,7 +210,9 @@ export default function CalendarPicker({
       {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1 text-center">
         {days.map((item) => {
-          const matchedItem = selectedDates.find((d) => getDateStr(d) === item.key);
+          const matchedItem = selectedDates.find(
+            (d) => getDateStr(d) === item.key,
+          );
           const displayTime = matchedItem ? getTimeStr(matchedItem) : "";
 
           return item.type === "blank" ? (
@@ -198,7 +236,7 @@ export default function CalendarPicker({
                   </span>
                 )}
               </button>
-              
+
               {item.isSuggested && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10 hidden group-hover:block w-max max-w-[140px]">
                   <div className="bg-gray-900 text-white text-[10px] rounded px-2 py-1 leading-snug shadow-md">
@@ -215,9 +253,12 @@ export default function CalendarPicker({
       {activeSelection && (
         <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between animate-fadeIn">
           <div>
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Izbrana ura za</p>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+              Izbrana ura za
+            </p>
             <p className="text-xs font-semibold text-gray-800">
-              {activeDateStr.split("-")[2]}. {monthNames[parseInt(activeDateStr.split("-")[1]) - 1]}
+              {activeDateStr.split("-")[2]}.{" "}
+              {monthNames[parseInt(activeDateStr.split("-")[1]) - 1]}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -256,7 +297,9 @@ export default function CalendarPicker({
               </p>
             </div>
           ) : (
-            <p className="text-center border-t border-gray-100 pt-3">Izberete lahko več datumov za glasovanje.</p>
+            <p className="text-center border-t border-gray-100 pt-3">
+              Izberete lahko več datumov za glasovanje.
+            </p>
           )}
         </div>
       )}

@@ -2,8 +2,15 @@ const std = @import("std");
 const httpz = @import("httpz");
 const App = @import("main.zig").App;
 
-fn uuidToHex(raw: []const u8, arena: std.mem.Allocator) ![]const u8 {
-    if (raw.len != 16) return error.InvalidUUID;
+// ----------------------------------------------------------------------------
+// UUID helpers (all string-based, no raw bytes)
+// ----------------------------------------------------------------------------
+
+fn uuidV4Hex(arena: std.mem.Allocator, rng: std.Random) ![]const u8 {
+    var bytes: [16]u8 = undefined;
+    rng.bytes(&bytes);
+    bytes[6] = (bytes[6] & 0x0F) | 0x40;
+    bytes[8] = (bytes[8] & 0x3F) | 0x80;
     const hex_chars = "0123456789abcdef";
     var buf: [36]u8 = undefined;
     var j: usize = 0;
@@ -12,55 +19,137 @@ fn uuidToHex(raw: []const u8, arena: std.mem.Allocator) ![]const u8 {
             buf[j] = '-';
             j += 1;
         }
-        buf[j] = hex_chars[raw[i] >> 4];
+        buf[j] = hex_chars[bytes[i] >> 4];
         j += 1;
-        buf[j] = hex_chars[raw[i] & 0x0F];
+        buf[j] = hex_chars[bytes[i] & 0x0F];
         j += 1;
     }
     return arena.dupe(u8, &buf);
 }
 
-fn hexToUuid(hex: []const u8, arena: std.mem.Allocator) ![]const u8 {
-    if (hex.len != 36) return error.InvalidUUID;
-    const raw = try arena.alloc(u8, 16);
-    var i: usize = 0;
-    var j: usize = 0;
-    while (i < 36) : (i += 1) {
-        const c = hex[i];
-        if (c == '-') continue;
-        const val = switch (c) {
-            '0'...'9' => c - '0',
-            'a'...'f' => c - 'a' + 10,
-            'A'...'F' => c - 'A' + 10,
-            else => return error.InvalidUUID,
-        };
-        if (j % 2 == 0) {
-            raw[j / 2] = @intCast(val << 4);
-        } else {
-            raw[j / 2] |= @intCast(val);
-        }
-        j += 1;
-    }
-    if (j != 32) return error.InvalidUUID;
-    return raw;
-}
-
-fn uuidV4Raw(arena: std.mem.Allocator, rng: std.Random) ![]const u8 {
-    var bytes: [16]u8 = undefined;
-    rng.bytes(&bytes);
-    bytes[6] = (bytes[6] & 0x0F) | 0x40; // version 4
-    bytes[8] = (bytes[8] & 0x3F) | 0x80; // variant 10xx
-    return arena.dupe(u8, &bytes);
-}
-
-fn uuidV4Hex(arena: std.mem.Allocator, rng: std.Random) ![]const u8 {
-    const raw = try uuidV4Raw(arena, rng);
-    return uuidToHex(raw, arena);
-}
-
 fn jsonParse(comptime T: type, arena: std.mem.Allocator, body: []const u8) !T {
     return std.json.parseFromSliceLeaky(T, arena, body, .{ .ignore_unknown_fields = true });
 }
+
+// ----------------------------------------------------------------------------
+// Email helpers
+// ----------------------------------------------------------------------------
+
+fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const u8, subject: []const u8, body: []const u8) !void {
+    const content = try std.fmt.allocPrint(alloc,
+        \\From: poll@yourserver.com
+        \\To: {s}
+        \\Subject: {s}
+        \\
+        \\{s}
+    , .{ to, subject, body });
+    defer alloc.free(content);
+
+    var rand_bytes: [8]u8 = undefined;
+    rng.bytes(&rand_bytes);
+    const unique = std.fmt.bytesToHex(rand_bytes, .lower);
+    const filename = try std.fmt.allocPrint(alloc, "/tmp/email_{s}.tmp", .{unique});
+    defer alloc.free(filename);
+
+    const file = try std.Io.Dir.cwd().createFile(io, filename, .{ .read = true, .truncate = true });
+    defer file.close(io);
+    defer std.Io.Dir.cwd().deleteFile(io, filename) catch {};
+
+    var buf: [4096]u8 = undefined;
+    var fw = file.writer(io, &buf);
+    var writer = &fw.interface;
+    try writer.writeAll(content);
+    try writer.flush();
+    try file.sync(io);
+
+    const cmd = try std.fmt.allocPrint(alloc, "msmtp --file=/etc/msmtprc --timeout=5 -t < '{s}'", .{filename});
+    defer alloc.free(cmd);
+
+    const result = try std.process.run(alloc, io, .{
+        .argv = &[_][]const u8{ "sh", "-c", cmd },
+    });
+    defer alloc.free(result.stdout);
+    defer alloc.free(result.stderr);
+
+    if (result.term != .exited or result.term.exited != 0) {
+        std.log.err("msmtp failed: {s}", .{result.stderr});
+    }
+}
+
+fn sendVoteNotification(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, organizer_email: []const u8, poll_title: []const u8, participant_name: []const u8) !void {
+    const subject = try std.fmt.allocPrint(alloc, "New vote in poll: {s}", .{poll_title});
+    defer alloc.free(subject);
+    const body = try std.fmt.allocPrint(alloc,
+        \\A new vote has been submitted for your poll "{s}".
+        \\
+        \\Participant: {s}
+        \\
+        \\Log in to see the updated results.
+    , .{ poll_title, participant_name });
+    defer alloc.free(body);
+    try sendEmail(alloc, io, rng, organizer_email, subject, body);
+}
+
+fn sendFinalizationEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, organizer_email: []const u8, poll_title: []const u8, final_slot_start: []const u8, final_slot_end: []const u8, participant_names: []const []const u8) !void {
+    const subject = try std.fmt.allocPrint(alloc, "Poll finalized: {s}", .{poll_title});
+    defer alloc.free(subject);
+
+    var participants_list = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
+    defer participants_list.deinit(alloc);
+    for (participant_names) |name| {
+        try participants_list.appendSlice(alloc, "- ");
+        try participants_list.appendSlice(alloc, name);
+        try participants_list.appendSlice(alloc, "\n");
+    }
+    const participants_str = try participants_list.toOwnedSlice(alloc);
+    defer alloc.free(participants_str);
+
+    const body = try std.fmt.allocPrint(alloc,
+        \\Your poll "{s}" has been finalized.
+        \\
+        \\Final chosen time slot: {s} - {s}
+        \\
+        \\Participants who voted:
+        \\{s}
+        \\
+        \\You can now view the results.
+    , .{ poll_title, final_slot_start, final_slot_end, participants_str });
+    defer alloc.free(body);
+    try sendEmail(alloc, io, rng, organizer_email, subject, body);
+}
+
+fn sendParticipantFinalizationEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, participant_email: []const u8, participant_name: []const u8, poll_title: []const u8, final_slot_start: []const u8, final_slot_end: []const u8) !void {
+    const subject = try std.fmt.allocPrint(alloc, "Poll finalized: {s}", .{poll_title});
+    defer alloc.free(subject);
+    const body = try std.fmt.allocPrint(alloc,
+        \\Hello {s},
+        \\
+        \\The poll "{s}" has been finalized.
+        \\
+        \\The chosen time slot is: {s} - {s}
+        \\
+        \\Thank you for participating.
+    , .{ participant_name, poll_title, final_slot_start, final_slot_end });
+    defer alloc.free(body);
+    try sendEmail(alloc, io, rng, participant_email, subject, body);
+}
+
+// ----------------------------------------------------------------------------
+// Shared types
+// ----------------------------------------------------------------------------
+
+const Slot = struct { id: []const u8, start_time: []const u8, end_time: []const u8 };
+const VoteOption = struct { slot_id: []const u8, status: []const u8 };
+const VoteRecord = struct {
+    participant_name: []const u8,
+    participant_email: []const u8,
+    date_votes: []const VoteOption,
+};
+const RawVote = struct { id: []const u8, name: []const u8, email: []const u8 };
+
+// ----------------------------------------------------------------------------
+// Route handlers
+// ----------------------------------------------------------------------------
 
 pub fn createPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const body = req.body() orelse {
@@ -79,28 +168,28 @@ pub fn createPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         tasks: []const []const u8 = &.{},
     }, res.arena, body);
 
-    const poll_id_raw = try uuidV4Raw(res.arena, app.rng);
-    const admin_token_raw = try uuidV4Raw(res.arena, app.rng);
-    const share_token_raw = try uuidV4Raw(res.arena, app.rng);
+    const poll_id_str = try uuidV4Hex(res.arena, app.rng);
+    const admin_token_str = try uuidV4Hex(res.arena, app.rng);
+    const share_token_str = try uuidV4Hex(res.arena, app.rng);
 
     _ = try app.db.exec(
         \\ INSERT INTO polls (id, title, description, organizer_email, admin_token, share_token)
         \\ VALUES ($1, $2, $3, $4, $5, $6)
-    , .{ poll_id_raw, input.title, input.description, input.organizer_email, admin_token_raw, share_token_raw });
+    , .{ poll_id_str, input.title, input.description, input.organizer_email, admin_token_str, share_token_str });
 
     for (input.time_slots) |slot| {
-        const slot_id_raw = try uuidV4Raw(res.arena, app.rng);
+        const slot_id_str = try uuidV4Hex(res.arena, app.rng);
         _ = try app.db.exec(
             \\ INSERT INTO time_slots (id, poll_id, start_time, end_time)
             \\ VALUES ($1, $2, $3, $4)
-        , .{ slot_id_raw, poll_id_raw, slot.start_time, slot.end_time });
+        , .{ slot_id_str, poll_id_str, slot.start_time, slot.end_time });
     }
 
     res.status = 201;
     try res.json(.{
-        .id = try uuidToHex(poll_id_raw, res.arena),
-        .share_token = try uuidToHex(share_token_raw, res.arena),
-        .admin_token = try uuidToHex(admin_token_raw, res.arena),
+        .id = poll_id_str,
+        .share_token = share_token_str,
+        .admin_token = admin_token_str,
     }, .{});
 }
 
@@ -110,115 +199,113 @@ pub fn getPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         return;
     };
 
-    const share_token_raw = try hexToUuid(share_token_hex, res.arena);
-
     var conn = try app.db.acquire();
     defer app.db.release(conn);
 
-    var poll_row = (try conn.row(
-        \\ SELECT id, title, description, organizer_email, is_finalized, final_slot_id
-        \\ FROM polls WHERE share_token = $1
-    , .{share_token_raw})) orelse {
-        res.status = 404;
-        res.body = "Poll not found";
-        return;
+    // ----- Poll row -----
+    const poll_id_str, const title, const description, const organizer_email, const is_finalized, const final_slot_id_str = blk: {
+        var row = conn.row(
+            \\ SELECT id::text, title, description, organizer_email, is_finalized, final_slot_id::text
+            \\ FROM polls WHERE share_token = $1
+        , .{share_token_hex}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getPoll [polls SELECT] PG error: {s}", .{pg_err.message});
+            return err;
+        } orelse {
+            res.status = 404;
+            res.body = "Poll not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        const id_str = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        const t = try res.arena.dupe(u8, try row.get([]const u8, 1));
+        const d = try res.arena.dupe(u8, try row.get([]const u8, 2));
+        const oe = try res.arena.dupe(u8, try row.get([]const u8, 3));
+        const fin = try row.get(bool, 4);
+        const fs_raw = try row.get(?[]const u8, 5);
+        const fs = if (fs_raw) |r| try res.arena.dupe(u8, r) else null;
+        break :blk .{ id_str, t, d, oe, fin, fs };
     };
 
-    const poll_id_raw = try res.arena.dupe(u8, try poll_row.get([]const u8, 0));
-    const title = try res.arena.dupe(u8, try poll_row.get([]const u8, 1));
-    const description = try res.arena.dupe(u8, try poll_row.get([]const u8, 2));
-    const organizer_email = try res.arena.dupe(u8, try poll_row.get([]const u8, 3));
-    const is_finalized = try poll_row.get(bool, 4);
-    const final_slot_id_raw: ?[]const u8 = blk: {
-        const raw = try poll_row.get(?[]const u8, 5);
-        break :blk if (raw) |r| try res.arena.dupe(u8, r) else null;
-    };
-    poll_row.deinit() catch {};
-
-    // Fetch time slots
-    var slots_result = try conn.query(
-        \\ SELECT id, start_time::text, end_time::text
-        \\ FROM time_slots WHERE poll_id = $1 ORDER BY start_time
-    , .{poll_id_raw});
-
-    var slots: std.ArrayList(struct {
-        id: []const u8,
-        start_time: []const u8,
-        end_time: []const u8,
-    }) = .empty;
-
-    while (try slots_result.next()) |row| {
-        const slot_id_raw = try res.arena.dupe(u8, try row.get([]const u8, 0));
-        try slots.append(res.arena, .{
-            .id = try uuidToHex(slot_id_raw, res.arena),
-            .start_time = try res.arena.dupe(u8, try row.get([]const u8, 1)),
-            .end_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
-        });
-    }
-    slots_result.deinit();
-
-    // Fetch vote IDs and names fully before querying options
-    var votes_result = try conn.query(
-        \\ SELECT id, participant_name
-        \\ FROM votes WHERE poll_id = $1 ORDER BY created_at
-    , .{poll_id_raw});
-
-    var vote_ids: std.ArrayList([]const u8) = .empty;
-    var participant_names: std.ArrayList([]const u8) = .empty;
-
-    while (try votes_result.next()) |vote_row| {
-        const vote_id_raw = try res.arena.dupe(u8, try vote_row.get([]const u8, 0));
-        const participant_name = try res.arena.dupe(u8, try vote_row.get([]const u8, 1));
-        try vote_ids.append(res.arena, vote_id_raw);
-        try participant_names.append(res.arena, participant_name);
-    }
-    votes_result.deinit();
-
-    // Now connection is free — query options per vote
-    const VoteOption = struct {
-        slot_id: []const u8,
-        status: []const u8,
-    };
-    const VoteRecord = struct {
-        participant_name: []const u8,
-        date_votes: []const VoteOption,
-    };
-
-    var votes_list: std.ArrayList(VoteRecord) = .empty;
-
-    for (vote_ids.items, participant_names.items) |vote_id_raw, participant_name| {
-        var options_result = try conn.query(
-            \\ SELECT time_slot_id, status
-            \\ FROM vote_options WHERE vote_id = $1 ORDER BY time_slot_id
-        , .{vote_id_raw});
-
-        var options_list: std.ArrayList(VoteOption) = .empty;
-
-        while (try options_result.next()) |opt_row| {
-            const slot_id_raw = try res.arena.dupe(u8, try opt_row.get([]const u8, 0));
-            const status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1));
-            try options_list.append(res.arena, .{
-                .slot_id = try uuidToHex(slot_id_raw, res.arena),
-                .status = status,
+    // ----- Time slots -----
+    const slots = blk: {
+        var result = conn.query(
+            \\ SELECT id::text, start_time::text, end_time::text
+            \\ FROM time_slots WHERE poll_id = $1 ORDER BY start_time
+        , .{poll_id_str}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getPoll [time_slots] PG error: {s}", .{pg_err.message});
+            return err;
+        };
+        defer result.deinit();
+        var list = std.ArrayListUnmanaged(Slot){ .items = &.{}, .capacity = 0 };
+        defer list.deinit(res.arena);
+        while (try result.next()) |row| {
+            try list.append(res.arena, .{
+                .id = try res.arena.dupe(u8, try row.get([]const u8, 0)),
+                .start_time = try res.arena.dupe(u8, try row.get([]const u8, 1)),
+                .end_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
             });
         }
-        options_result.deinit();
+        break :blk try list.toOwnedSlice(res.arena);
+    };
 
-        try votes_list.append(res.arena, .{
-            .participant_name = participant_name,
-            .date_votes = options_list.items,
-        });
-    }
+    // ----- Votes: collect all first, then query options -----
+    const votes = blk: {
+        var votes_result = conn.query(
+            \\ SELECT id::text, participant_name, participant_email
+            \\ FROM votes WHERE poll_id = $1 ORDER BY created_at
+        , .{poll_id_str}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getPoll [votes] PG error: {s}", .{pg_err.message});
+            return err;
+        };
+
+        var raw_votes = std.ArrayListUnmanaged(RawVote){ .items = &.{}, .capacity = 0 };
+        defer raw_votes.deinit(res.arena);
+        while (try votes_result.next()) |vote_row| {
+            try raw_votes.append(res.arena, .{
+                .id = try res.arena.dupe(u8, try vote_row.get([]const u8, 0)),
+                .name = try res.arena.dupe(u8, try vote_row.get([]const u8, 1)),
+                .email = try res.arena.dupe(u8, try vote_row.get([]const u8, 2)),
+            });
+        }
+        votes_result.deinit(); // explicit — free connection before nested queries
+
+        var votes_list = std.ArrayListUnmanaged(VoteRecord){ .items = &.{}, .capacity = 0 };
+        defer votes_list.deinit(res.arena);
+        for (raw_votes.items) |raw_vote| {
+            var options_result = conn.query(
+                \\ SELECT time_slot_id::text, status
+                \\ FROM vote_options WHERE vote_id = $1 ORDER BY time_slot_id
+            , .{raw_vote.id}) catch |err| {
+                if (conn.err) |pg_err| std.log.err("getPoll [vote_options] PG error: {s}", .{pg_err.message});
+                return err;
+            };
+            var options_list = std.ArrayListUnmanaged(VoteOption){ .items = &.{}, .capacity = 0 };
+            defer options_list.deinit(res.arena);
+            while (try options_result.next()) |opt_row| {
+                try options_list.append(res.arena, .{
+                    .slot_id = try res.arena.dupe(u8, try opt_row.get([]const u8, 0)),
+                    .status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1)),
+                });
+            }
+            options_result.deinit();
+            try votes_list.append(res.arena, .{
+                .participant_name = raw_vote.name,
+                .participant_email = raw_vote.email,
+                .date_votes = options_list.items,
+            });
+        }
+        break :blk try votes_list.toOwnedSlice(res.arena);
+    };
 
     try res.json(.{
-        .id = try uuidToHex(poll_id_raw, res.arena),
+        .id = poll_id_str,
         .title = title,
         .description = description,
         .organizer_email = organizer_email,
         .is_finalized = is_finalized,
-        .final_slot_id = if (final_slot_id_raw) |raw| try uuidToHex(raw, res.arena) else null,
-        .time_slots = slots.items,
-        .votes = votes_list.items,
+        .final_slot_id = final_slot_id_str,
+        .time_slots = slots,
+        .votes = votes,
     }, .{});
 }
 
@@ -228,147 +315,222 @@ pub fn getAdminPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
         return;
     };
 
-    const admin_token_raw = try hexToUuid(admin_token_hex, res.arena);
-
     var conn = try app.db.acquire();
     defer app.db.release(conn);
 
-    var poll_row = (try conn.row(
-        \\ SELECT id, title, description, organizer_email, is_finalized, final_slot_id, share_token
-        \\ FROM polls WHERE admin_token = $1
-    , .{admin_token_raw})) orelse {
-        res.status = 404;
-        res.body = "Poll not found";
-        return;
+    // ----- Poll row -----
+    const poll_id_str, const title, const description, const organizer_email, const is_finalized, const final_slot_id_str, const share_token_str = blk: {
+        var row = conn.row(
+            \\ SELECT id::text, title, description, organizer_email, is_finalized, final_slot_id::text, share_token::text
+            \\ FROM polls WHERE admin_token = $1
+        , .{admin_token_hex}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getAdminPoll [polls SELECT] PG error: {s}", .{pg_err.message});
+            return err;
+        } orelse {
+            res.status = 404;
+            res.body = "Poll not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        const id = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        const t = try res.arena.dupe(u8, try row.get([]const u8, 1));
+        const d = try res.arena.dupe(u8, try row.get([]const u8, 2));
+        const oe = try res.arena.dupe(u8, try row.get([]const u8, 3));
+        const fin = try row.get(bool, 4);
+        const fs_raw = try row.get(?[]const u8, 5);
+        const fs = if (fs_raw) |r| try res.arena.dupe(u8, r) else null;
+        const st = try res.arena.dupe(u8, try row.get([]const u8, 6));
+        break :blk .{ id, t, d, oe, fin, fs, st };
     };
 
-    const poll_id_raw = try res.arena.dupe(u8, try poll_row.get([]const u8, 0));
-    const title = try res.arena.dupe(u8, try poll_row.get([]const u8, 1));
-    const description = try res.arena.dupe(u8, try poll_row.get([]const u8, 2));
-    const organizer_email = try res.arena.dupe(u8, try poll_row.get([]const u8, 3));
-    const is_finalized = try poll_row.get(bool, 4);
-    const final_slot_id_raw: ?[]const u8 = blk: {
-        const raw = try poll_row.get(?[]const u8, 5);
-        break :blk if (raw) |r| try res.arena.dupe(u8, r) else null;
-    };
-    const share_token_raw = try res.arena.dupe(u8, try poll_row.get([]const u8, 6));
-    poll_row.deinit() catch {};
-
-    // Fetch time slots — deinit explicitly before next query
-    var slots_result = try conn.query(
-        \\ SELECT id, start_time::text, end_time::text
-        \\ FROM time_slots WHERE poll_id = $1 ORDER BY start_time
-    , .{poll_id_raw});
-
-    var slots: std.ArrayList(struct {
-        id: []const u8,
-        start_time: []const u8,
-        end_time: []const u8,
-    }) = .empty;
-
-    while (try slots_result.next()) |row| {
-        const slot_id_raw = try res.arena.dupe(u8, try row.get([]const u8, 0));
-        try slots.append(res.arena, .{
-            .id = try uuidToHex(slot_id_raw, res.arena),
-            .start_time = try res.arena.dupe(u8, try row.get([]const u8, 1)),
-            .end_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
-        });
-    }
-    slots_result.deinit(); // explicit, not defer
-
-    // Collect vote IDs and names fully before querying options
-    var votes_result = try conn.query(
-        \\ SELECT id, participant_name
-        \\ FROM votes WHERE poll_id = $1 ORDER BY created_at
-    , .{poll_id_raw});
-
-    var vote_ids: std.ArrayList([]const u8) = .empty;
-    var participant_names: std.ArrayList([]const u8) = .empty;
-
-    while (try votes_result.next()) |vote_row| {
-        const vote_id_raw = try res.arena.dupe(u8, try vote_row.get([]const u8, 0));
-        const participant_name = try res.arena.dupe(u8, try vote_row.get([]const u8, 1));
-        try vote_ids.append(res.arena, vote_id_raw);
-        try participant_names.append(res.arena, participant_name);
-    }
-    votes_result.deinit(); // explicit, not defer
-
-    // Now connection is free — query options per vote
-    const VoteOption = struct {
-        slot_id: []const u8,
-        status: []const u8,
-    };
-    const VoteRecord = struct {
-        participant_name: []const u8,
-        date_votes: []const VoteOption,
-    };
-
-    var votes_list: std.ArrayList(VoteRecord) = .empty;
-
-    for (vote_ids.items, participant_names.items) |vote_id_raw, participant_name| {
-        var options_result = try conn.query(
-            \\ SELECT time_slot_id, status
-            \\ FROM vote_options WHERE vote_id = $1 ORDER BY time_slot_id
-        , .{vote_id_raw});
-
-        var options_list: std.ArrayList(VoteOption) = .empty;
-
-        while (try options_result.next()) |opt_row| {
-            const slot_id_raw = try res.arena.dupe(u8, try opt_row.get([]const u8, 0));
-            const status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1));
-            try options_list.append(res.arena, .{
-                .slot_id = try uuidToHex(slot_id_raw, res.arena),
-                .status = status,
+    // ----- Time slots -----
+    const slots = blk: {
+        var result = conn.query(
+            \\ SELECT id::text, start_time::text, end_time::text
+            \\ FROM time_slots WHERE poll_id = $1 ORDER BY start_time
+        , .{poll_id_str}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getAdminPoll [time_slots] PG error: {s}", .{pg_err.message});
+            return err;
+        };
+        defer result.deinit();
+        var list = std.ArrayListUnmanaged(Slot){ .items = &.{}, .capacity = 0 };
+        defer list.deinit(res.arena);
+        while (try result.next()) |row| {
+            try list.append(res.arena, .{
+                .id = try res.arena.dupe(u8, try row.get([]const u8, 0)),
+                .start_time = try res.arena.dupe(u8, try row.get([]const u8, 1)),
+                .end_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
             });
         }
-        options_result.deinit(); // explicit, not defer
-
-        try votes_list.append(res.arena, .{
-            .participant_name = participant_name,
-            .date_votes = options_list.items,
-        });
-    }
-
-    // Fetch suggestions — connection is free again
-    var suggestions_result = try conn.query(
-        \\ SELECT id, suggested_by, start_time::text, end_time::text, status
-        \\ FROM slot_suggestions WHERE poll_id = $1 ORDER BY created_at
-    , .{poll_id_raw});
-
-    const SuggestionRecord = struct {
-        id: []const u8,
-        suggested_by: []const u8,
-        start_time: []const u8,
-        end_time: []const u8,
-        status: []const u8,
+        break :blk try list.toOwnedSlice(res.arena);
     };
-    var suggestions_list: std.ArrayList(SuggestionRecord) = .empty;
 
-    while (try suggestions_result.next()) |row| {
-        const suggestion_id_raw = try res.arena.dupe(u8, try row.get([]const u8, 0));
-        try suggestions_list.append(res.arena, .{
-            .id = try uuidToHex(suggestion_id_raw, res.arena),
-            .suggested_by = try res.arena.dupe(u8, try row.get([]const u8, 1)),
-            .start_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
-            .end_time = try res.arena.dupe(u8, try row.get([]const u8, 3)),
-            .status = try res.arena.dupe(u8, try row.get([]const u8, 4)),
-        });
-    }
-    suggestions_result.deinit(); // explicit, not defer
+    // ----- Votes: collect all first, then query options -----
+    const votes = blk: {
+        var votes_result = conn.query(
+            \\ SELECT id::text, participant_name, participant_email
+            \\ FROM votes WHERE poll_id = $1 ORDER BY created_at
+        , .{poll_id_str}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getAdminPoll [votes] PG error: {s}", .{pg_err.message});
+            return err;
+        };
+
+        var raw_votes = std.ArrayListUnmanaged(RawVote){ .items = &.{}, .capacity = 0 };
+        defer raw_votes.deinit(res.arena);
+        while (try votes_result.next()) |vote_row| {
+            try raw_votes.append(res.arena, .{
+                .id = try res.arena.dupe(u8, try vote_row.get([]const u8, 0)),
+                .name = try res.arena.dupe(u8, try vote_row.get([]const u8, 1)),
+                .email = try res.arena.dupe(u8, try vote_row.get([]const u8, 2)),
+            });
+        }
+        votes_result.deinit(); // explicit — free connection before nested queries
+
+        var votes_list = std.ArrayListUnmanaged(VoteRecord){ .items = &.{}, .capacity = 0 };
+        defer votes_list.deinit(res.arena);
+        for (raw_votes.items) |raw_vote| {
+            var options_result = conn.query(
+                \\ SELECT time_slot_id::text, status
+                \\ FROM vote_options WHERE vote_id = $1 ORDER BY time_slot_id
+            , .{raw_vote.id}) catch |err| {
+                if (conn.err) |pg_err| std.log.err("getAdminPoll [vote_options] PG error: {s}", .{pg_err.message});
+                return err;
+            };
+            var options_list = std.ArrayListUnmanaged(VoteOption){ .items = &.{}, .capacity = 0 };
+            defer options_list.deinit(res.arena);
+            while (try options_result.next()) |opt_row| {
+                try options_list.append(res.arena, .{
+                    .slot_id = try res.arena.dupe(u8, try opt_row.get([]const u8, 0)),
+                    .status = try res.arena.dupe(u8, try opt_row.get([]const u8, 1)),
+                });
+            }
+            options_result.deinit();
+            try votes_list.append(res.arena, .{
+                .participant_name = raw_vote.name,
+                .participant_email = raw_vote.email,
+                .date_votes = options_list.items,
+            });
+        }
+        break :blk try votes_list.toOwnedSlice(res.arena);
+    };
+
+    // ----- Suggestions -----
+    const suggestions = blk: {
+        var result = conn.query(
+            \\ SELECT id::text, suggested_by, start_time::text, end_time::text, status
+            \\ FROM slot_suggestions WHERE poll_id = $1 ORDER BY created_at
+        , .{poll_id_str}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("getAdminPoll [suggestions] PG error: {s}", .{pg_err.message});
+            return err;
+        };
+        defer result.deinit();
+        var list = std.ArrayListUnmanaged(struct {
+            id: []const u8,
+            suggested_by: []const u8,
+            start_time: []const u8,
+            end_time: []const u8,
+            status: []const u8,
+        }){ .items = &.{}, .capacity = 0 };
+        defer list.deinit(res.arena);
+        while (try result.next()) |row| {
+            try list.append(res.arena, .{
+                .id = try res.arena.dupe(u8, try row.get([]const u8, 0)),
+                .suggested_by = try res.arena.dupe(u8, try row.get([]const u8, 1)),
+                .start_time = try res.arena.dupe(u8, try row.get([]const u8, 2)),
+                .end_time = try res.arena.dupe(u8, try row.get([]const u8, 3)),
+                .status = try res.arena.dupe(u8, try row.get([]const u8, 4)),
+            });
+        }
+        break :blk try list.toOwnedSlice(res.arena);
+    };
 
     try res.json(.{
-        .id = try uuidToHex(poll_id_raw, res.arena),
+        .id = poll_id_str,
         .title = title,
         .description = description,
         .organizer_email = organizer_email,
         .is_finalized = is_finalized,
-        .final_slot_id = if (final_slot_id_raw) |raw| try uuidToHex(raw, res.arena) else null,
-        .share_token = try uuidToHex(share_token_raw, res.arena),
-        .time_slots = slots.items,
-        .votes = votes_list.items,
-        .suggestions = suggestions_list.items,
+        .final_slot_id = final_slot_id_str,
+        .share_token = share_token_str,
+        .time_slots = slots,
+        .votes = votes,
+        .suggestions = suggestions,
     }, .{});
 }
+
+pub fn acceptSuggestion(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
+    const admin_token_hex = req.param("admin_token") orelse {
+        res.status = 400;
+        return;
+    };
+    const body = req.body() orelse {
+        res.status = 400;
+        return;
+    };
+
+    const input = try jsonParse(struct {
+        suggestion_id: []const u8,
+    }, res.arena, body);
+
+    var conn = try app.db.acquire();
+    defer app.db.release(conn);
+
+    // Verify admin token and get poll id
+    const poll_id_str = blk: {
+        var row = (conn.row(
+            \\ SELECT id::text FROM polls WHERE admin_token = $1
+        , .{admin_token_hex}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("acceptSuggestion [poll lookup] PG error: {s}", .{pg_err.message});
+            return err;
+        }) orelse {
+            res.status = 404;
+            res.body = "Poll not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        break :blk try res.arena.dupe(u8, try row.get([]const u8, 0));
+    };
+
+    // Get the suggestion's times
+    const start_time, const end_time = blk: {
+        var row = (conn.row(
+            \\ SELECT start_time::text, end_time::text FROM slot_suggestions
+            \\ WHERE id = $1 AND poll_id = $2
+        , .{ input.suggestion_id, poll_id_str }) catch |err| {
+            if (conn.err) |pg_err| std.log.err("acceptSuggestion [suggestion lookup] PG error: {s}", .{pg_err.message});
+            return err;
+        }) orelse {
+            res.status = 404;
+            res.body = "Suggestion not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        const s = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        const e = try res.arena.dupe(u8, try row.get([]const u8, 1));
+        break :blk .{ s, e };
+    };
+
+    // Insert as a real time slot
+    const slot_id_str = try uuidV4Hex(res.arena, app.rng);
+    _ = conn.exec(
+        \\ INSERT INTO time_slots (id, poll_id, start_time, end_time)
+        \\ VALUES ($1, $2, $3, $4)
+    , .{ slot_id_str, poll_id_str, start_time, end_time }) catch |err| {
+        if (conn.err) |pg_err| std.log.err("acceptSuggestion [insert slot] PG error: {s}", .{pg_err.message});
+        return err;
+    };
+
+    // Mark suggestion as accepted
+    _ = conn.exec(
+        \\ UPDATE slot_suggestions SET status = 'accepted' WHERE id = $1
+    , .{input.suggestion_id}) catch |err| {
+        if (conn.err) |pg_err| std.log.err("acceptSuggestion [update suggestion] PG error: {s}", .{pg_err.message});
+        return err;
+    };
+
+    try res.json(.{ .success = true, .slot_id = slot_id_str }, .{});
+}
+
 pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const share_token_hex = req.param("share_token") orelse {
         res.status = 400;
@@ -380,35 +542,37 @@ pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     };
     const input = try jsonParse(struct {
         participant_name: []const u8,
+        participant_email: []const u8 = "",
         date_votes: []const struct {
-            slot_id: []const u8, 
+            slot_id: []const u8,
             status: []const u8,
         },
         claimed_tasks: []const []const u8 = &.{},
     }, res.arena, body);
-    const share_token_raw = try hexToUuid(share_token_hex, res.arena);
+
     var conn = try app.db.acquire();
     defer app.db.release(conn);
 
-    // Look up the poll
-    var poll_row = (try conn.row(
-        \\ SELECT id FROM polls WHERE share_token = $1
-    , .{share_token_raw})) orelse {
-        res.status = 404;
-        res.body = "Poll not found";
-        return;
+    const poll_id_str = blk: {
+        var row = (conn.row(
+            \\ SELECT id::text FROM polls WHERE share_token = $1
+        , .{share_token_hex}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("submitVote [poll lookup] PG error: {s}", .{pg_err.message});
+            return err;
+        }) orelse {
+            res.status = 404;
+            res.body = "Poll not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        break :blk try res.arena.dupe(u8, try row.get([]const u8, 0));
     };
-    const poll_id_raw = try res.arena.dupe(u8, try poll_row.get([]const u8, 0));
-    poll_row.deinit() catch {};
 
-    // Validate that every slot_id belongs to this poll cleanly without leaving rows un-deinitialized
     for (input.date_votes) |dv| {
-        const slot_id_raw = try hexToUuid(dv.slot_id, res.arena);
-        var check_row = try conn.row(
+        var slot_row = try conn.row(
             \\ SELECT id FROM time_slots WHERE id = $1 AND poll_id = $2
-        , .{ slot_id_raw, poll_id_raw });
-        
-        if (check_row) |*r| {
+        , .{ dv.slot_id, poll_id_str });
+        if (slot_row) |*r| {
             r.deinit() catch {};
         } else {
             res.status = 400;
@@ -417,60 +581,75 @@ pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         }
     }
 
-    // Begin transaction
     _ = try conn.exec("BEGIN", .{});
     errdefer _ = conn.exec("ROLLBACK", .{}) catch {};
 
-    // Check if the participant already has a vote for this poll
     const existing_vote_row = try conn.row(
-        \\ SELECT id FROM votes WHERE poll_id = $1 AND participant_name = $2
-    , .{ poll_id_raw, input.participant_name });
+        \\ SELECT id::text FROM votes WHERE poll_id = $1 AND participant_name = $2
+    , .{ poll_id_str, input.participant_name });
 
-    var vote_id_raw: []const u8 = undefined;
+    var vote_id_str: []const u8 = undefined;
 
     if (existing_vote_row) |row_val| {
         var row = row_val;
-        vote_id_raw = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        vote_id_str = try res.arena.dupe(u8, try row.get([]const u8, 0));
         row.deinit() catch {};
 
         _ = conn.exec(
             \\ DELETE FROM vote_options WHERE vote_id = $1
-        , .{vote_id_raw}) catch |err| {
+        , .{vote_id_str}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("submitVote [delete options] PG error: {s}", .{pg_err.message});
             return err;
         };
-
         _ = conn.exec(
-            \\ UPDATE votes SET updated_at = CURRENT_TIMESTAMP WHERE id = $1
-        , .{vote_id_raw}) catch |err| {
+            \\ UPDATE votes SET updated_at = CURRENT_TIMESTAMP, participant_email = $2 WHERE id = $1
+        , .{ vote_id_str, input.participant_email }) catch |err| {
+            if (conn.err) |pg_err| std.log.err("submitVote [update vote] PG error: {s}", .{pg_err.message});
             return err;
-};
+        };
     } else {
-        vote_id_raw = try uuidV4Raw(res.arena, app.rng);
+        vote_id_str = try uuidV4Hex(res.arena, app.rng);
         _ = conn.exec(
-            \\ INSERT INTO votes (id, poll_id, participant_name) VALUES ($1, $2, $3)
-        , .{ vote_id_raw, poll_id_raw, input.participant_name }) catch |err| {
+            \\ INSERT INTO votes (id, poll_id, participant_name, participant_email) VALUES ($1, $2, $3, $4)
+        , .{ vote_id_str, poll_id_str, input.participant_name, input.participant_email }) catch |err| {
+            if (conn.err) |pg_err| std.log.err("submitVote [insert vote] PG error: {s}", .{pg_err.message});
             return err;
         };
     }
 
-    // Insert new vote options
     for (input.date_votes) |dv| {
-        const slot_id_raw = try hexToUuid(dv.slot_id, res.arena);
-        const option_id_raw = try uuidV4Raw(res.arena, app.rng);
+        const option_id_str = try uuidV4Hex(res.arena, app.rng);
         _ = conn.exec(
             \\ INSERT INTO vote_options (id, vote_id, time_slot_id, status)
             \\ VALUES ($1, $2, $3, $4)
-        , .{ option_id_raw, vote_id_raw, slot_id_raw, dv.status }) catch |err| {
+        , .{ option_id_str, vote_id_str, dv.slot_id, dv.status }) catch |err| {
+            if (conn.err) |pg_err| std.log.err("submitVote [insert option] PG error: {s}", .{pg_err.message});
             return err;
         };
     }
 
     _ = try conn.exec("COMMIT", .{});
+
+    // Fetch poll info for email notification
+    const organizer_email, const poll_title = blk: {
+        var row = (try conn.row(
+            \\ SELECT organizer_email, title FROM polls WHERE id = $1
+        , .{poll_id_str})) orelse return error.PollNotFound;
+        defer row.deinit() catch {};
+        const oe = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        const pt = try res.arena.dupe(u8, try row.get([]const u8, 1));
+        break :blk .{ oe, pt };
+    };
+
+    sendVoteNotification(res.arena, app.io, app.rng, organizer_email, poll_title, input.participant_name) catch |err| {
+        std.log.err("Failed to send vote notification: {}", .{err});
+    };
+
     res.status = 201;
     try res.json(.{ .success = true }, .{});
 }
 
-pub fn suggestSlots(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
+pub fn suggestDate(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const share_token_hex = req.param("share_token") orelse {
         res.status = 400;
         return;
@@ -482,20 +661,17 @@ pub fn suggestSlots(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
 
     const input = jsonParse(struct {
         suggested_by: []const u8,
-        dates: []const []const u8, 
+        dates: []const []const u8,
     }, res.arena, body) catch |err| {
-        std.debug.print("JSON Parsing failed for suggestSlots: {}\n", .{err});
+        std.debug.print("JSON Parsing failed for suggestDate: {}\n", .{err});
         res.status = 400;
         res.body = "Malformed JSON payload";
         return;
     };
 
-    const share_token_raw = try hexToUuid(share_token_hex, res.arena);
-
     var conn = try app.db.acquire();
     defer app.db.release(conn);
 
-    // --- SAFETY FAILSAFE STRATEGY: Ensure table existence directly in case driver migrations skipped it ---
     _ = try conn.exec(
         \\ CREATE TABLE IF NOT EXISTS slot_suggestions (
         \\     id UUID PRIMARY KEY,
@@ -508,30 +684,40 @@ pub fn suggestSlots(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
         \\ );
     , .{});
 
-    // Look up the poll
-    var poll_row = (try conn.row(
-        \\ SELECT id FROM polls WHERE share_token = $1
-    , .{share_token_raw})) orelse {
-        res.status = 404;
-        res.body = "Poll not found";
-        return;
+    const poll_id_str = blk: {
+        var row = (conn.row(
+            \\ SELECT id::text FROM polls WHERE share_token = $1
+        , .{share_token_hex}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("suggestDate [poll lookup] PG error: {s}", .{pg_err.message});
+            return err;
+        }) orelse {
+            res.status = 404;
+            res.body = "Poll not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        break :blk try res.arena.dupe(u8, try row.get([]const u8, 0));
     };
-    const poll_id_raw = try res.arena.dupe(u8, try poll_row.get([]const u8, 0));
-    poll_row.deinit() catch {};
 
-    // Insert each suggested date as a slot_suggestion
     for (input.dates) |date_str| {
         if (date_str.len == 0) continue;
+        const id_str = try uuidV4Hex(res.arena, app.rng);
 
-        const suggestion_id_raw = try uuidV4Raw(res.arena, app.rng);
-        
-        const start_time = try std.fmt.allocPrint(res.arena, "{s}T00:00:00Z", .{date_str});
-        const end_time = try std.fmt.allocPrint(res.arena, "{s}T23:59:59Z", .{date_str});
-        
-        _ = try conn.exec(
+        // If it already has a time component, use it directly
+        const start_time = if (std.mem.indexOf(u8, date_str, "T") != null)
+            try std.fmt.allocPrint(res.arena, "{s}Z", .{date_str})
+        else
+            try std.fmt.allocPrint(res.arena, "{s}T00:00:00Z", .{date_str});
+
+        const end_time = start_time; // suggestions don't need a real end time
+
+        _ = conn.exec(
             \\ INSERT INTO slot_suggestions (id, poll_id, suggested_by, start_time, end_time, status)
             \\ VALUES ($1, $2, $3, $4, $5, 'pending')
-        , .{ suggestion_id_raw, poll_id_raw, input.suggested_by, start_time, end_time });
+        , .{ id_str, poll_id_str, input.suggested_by, start_time, end_time }) catch |err| {
+            if (conn.err) |pg_err| std.log.err("suggestDate [insert] PG error: {s}", .{pg_err.message});
+            return err;
+        };
     }
 
     res.status = 201;
@@ -549,26 +735,31 @@ pub fn finalizePoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
     };
 
     const input = try jsonParse(struct {
-        final_slot_id: []const u8, // hex string from the client
+        final_slot_id: []const u8,
     }, res.arena, body);
-
-    const admin_token_raw = try hexToUuid(admin_token_hex, res.arena);
-    const final_slot_id_raw = try hexToUuid(input.final_slot_id, res.arena);
 
     var conn = try app.db.acquire();
     defer app.db.release(conn);
 
-    var poll_row = (try conn.row(
-        \\ SELECT id, is_finalized FROM polls WHERE admin_token = $1
-    , .{admin_token_raw})) orelse {
-        res.status = 404;
-        res.body = "Poll not found";
-        return;
+    const poll_id_str, const already_finalized, const organizer_email, const poll_title = blk: {
+        var row = (conn.row(
+            \\ SELECT id::text, is_finalized, organizer_email, title
+            \\ FROM polls WHERE admin_token = $1
+        , .{admin_token_hex}) catch |err| {
+            if (conn.err) |pg_err| std.log.err("finalizePoll [poll lookup] PG error: {s}", .{pg_err.message});
+            return err;
+        }) orelse {
+            res.status = 404;
+            res.body = "Poll not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        const id = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        const fin = try row.get(bool, 1);
+        const oe = try res.arena.dupe(u8, try row.get([]const u8, 2));
+        const pt = try res.arena.dupe(u8, try row.get([]const u8, 3));
+        break :blk .{ id, fin, oe, pt };
     };
-
-    const poll_id_raw = try res.arena.dupe(u8, try poll_row.get([]const u8, 0));
-    const already_finalized = try poll_row.get(bool, 1);
-    poll_row.deinit() catch {};
 
     if (already_finalized) {
         res.status = 409;
@@ -578,7 +769,46 @@ pub fn finalizePoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
 
     _ = try conn.exec(
         \\ UPDATE polls SET is_finalized = TRUE, final_slot_id = $1 WHERE id = $2
-    , .{ final_slot_id_raw, poll_id_raw });
+    , .{ input.final_slot_id, poll_id_str });
+
+    const final_start, const final_end = blk: {
+        var row = (try conn.row(
+            \\ SELECT start_time::text, end_time::text FROM time_slots WHERE id = $1
+        , .{input.final_slot_id})) orelse {
+            res.status = 400;
+            res.body = "Final slot not found";
+            return;
+        };
+        defer row.deinit() catch {};
+        const s = try res.arena.dupe(u8, try row.get([]const u8, 0));
+        const e = try res.arena.dupe(u8, try row.get([]const u8, 1));
+        break :blk .{ s, e };
+    };
+
+    var participants_result = try conn.query(
+        \\ SELECT participant_name, participant_email FROM votes WHERE poll_id = $1
+    , .{poll_id_str});
+
+    var participant_names = std.ArrayListUnmanaged([]const u8){ .items = &.{}, .capacity = 0 };
+    defer participant_names.deinit(res.arena);
+    var participant_emails = std.ArrayListUnmanaged([]const u8){ .items = &.{}, .capacity = 0 };
+    defer participant_emails.deinit(res.arena);
+
+    while (try participants_result.next()) |row| {
+        try participant_names.append(res.arena, try res.arena.dupe(u8, try row.get([]const u8, 0)));
+        try participant_emails.append(res.arena, try res.arena.dupe(u8, try row.get([]const u8, 1)));
+    }
+    participants_result.deinit();
+
+    sendFinalizationEmail(res.arena, app.io, app.rng, organizer_email, poll_title, final_start, final_end, participant_names.items) catch |err| {
+        std.log.err("Failed to send finalization email to organizer: {}", .{err});
+    };
+
+    for (participant_emails.items, participant_names.items) |email, name| {
+        sendParticipantFinalizationEmail(res.arena, app.io, app.rng, email, name, poll_title, final_start, final_end) catch |err| {
+            std.log.err("Failed to send finalization email to {s}: {}", .{ name, err });
+        };
+    }
 
     try res.json(.{ .success = true }, .{});
 }

@@ -214,10 +214,10 @@ export default function InviteView({ eventData }) {
   if (isSubmitted) {
     return (
       <div className="flex flex-col justify-center items-center min-h-[60vh] text-center px-4 bg-white max-w-xl mx-auto py-12">
-        <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-5 text-xl font-bold">
+          <div className="h-14 w-14 rounded-full bg-accent-1 flex items-center justify-center text-primary mb-5 text-xl font-bold">
           ✓
         </div>
-        <h1 className="font-serif text-3xl font-normal text-gray-950 mb-3">
+        <h1 className="text-3xl font-normal text-gray-950 mb-3">
           Hvala, {guestName}!
         </h1>
         <p className="text-sm text-gray-600 max-w-sm font-light leading-relaxed mb-6">
@@ -229,7 +229,7 @@ export default function InviteView({ eventData }) {
         <div className="flex flex-col items-center gap-3">
           <button
             onClick={handleToggleResults}
-            className="text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-md shadow-sm transition"
+            className="text-xs font-medium text-on-primary bg-primary hover:opacity-90 px-4 py-2 rounded-md shadow-sm transition"
           >
             {resultsVisible
               ? "Skrij rezultate glasovanja"
@@ -270,11 +270,11 @@ export default function InviteView({ eventData }) {
 });
   return (
     <div className="py-12 md:py-16 px-4 max-w-xl mx-auto">
-      <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 py-1 px-2.5 rounded-full mb-4">
+      <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-accent-1 text-primary py-1 px-2.5 rounded-full mb-4">
         {organizerName || "Organizator"} vas vabi!
       </span>
       <div className="mb-8">
-        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">
+        <h1 className="text-3xl font-normal text-gray-900 mb-2">
           {title}
         </h1>
         <p className="text-gray-600 font-light leading-relaxed">
@@ -283,7 +283,7 @@ export default function InviteView({ eventData }) {
       </div>
 
       {notice && (
-        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-accent-1 border-accent-1 bg-accent-1 text-primary'}`}>
           {notice.message}
         </div>
       )}
@@ -327,7 +327,7 @@ export default function InviteView({ eventData }) {
                 return (
                   <div
                     key={task}
-                    className={`flex items-center justify-between p-4 border rounded-xl transition duration-150 ${isClaimed ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-gray-50 border-gray-200 text-gray-800"}`}
+                    className={`flex items-center justify-between p-4 border rounded-xl transition duration-150 ${isClaimed ? "bg-accent-1 border-accent-1 text-primary" : "bg-gray-50 border-gray-200 text-gray-800"}`}
                   >
                     <div className="flex flex-col">
                       <span className={`text-sm font-medium ${isClaimed ? "line-through opacity-70" : ""}`}>
@@ -339,7 +339,7 @@ export default function InviteView({ eventData }) {
                     </div>
                     <button
                       type="button"
-                      className={`text-xs font-medium py-1.5 px-3 rounded transition ${isClaimed ? "bg-emerald-800 text-white" : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"}`}
+                      className={`text-xs font-medium py-1.5 px-3 rounded transition ${isClaimed ? "bg-primary text-on-primary" : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"}`}
                       onClick={() => toggleTask(task)}
                     >
                       {isClaimed ? "Izpusti" : "Prevzemi"}
@@ -353,7 +353,7 @@ export default function InviteView({ eventData }) {
 
         <button
           type="submit"
-          className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 transition shadow-sm"
+          className="w-full text-sm text-on-primary font-medium bg-primary py-3 px-5 rounded-md hover:opacity-90 active:scale-95 transition shadow-sm"
         >
           Potrdi udeležbo
         </button>
@@ -363,7 +363,7 @@ export default function InviteView({ eventData }) {
             setSuggestNotice(null);
             setShowSuggestModal(true);
           }}
-          className="w-full text-sm text-blue-700 font-medium bg-blue-50 border border-blue-200 py-3 px-5 rounded-md hover:bg-blue-100 transition"
+          className="w-full text-sm text-primary font-medium bg-accent-1 border border-accent-1 py-3 px-5 rounded-md hover:opacity-95 transition"
         >
           Predlagaj nov datum
         </button>
@@ -381,7 +381,7 @@ export default function InviteView({ eventData }) {
             <div className="mt-5 flex justify-end">
               <button
                 type="button"
-                className="text-sm text-white font-medium bg-black py-2 px-4 rounded-md hover:bg-gray-800 transition"
+                className="text-sm text-on-primary font-medium bg-primary py-2 px-4 rounded-md hover:opacity-90 transition"
                 onClick={() => setShowNoDatePopup(false)}
               >
                 V redu
@@ -406,7 +406,7 @@ export default function InviteView({ eventData }) {
               isPollMode={false}
             />
             {suggestNotice && (
-              <div ref={suggestNoticeRef} className={`mt-3 rounded-lg border px-3 py-2 text-xs font-light ${suggestNotice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+              <div ref={suggestNoticeRef} className={`mt-3 rounded-lg border px-3 py-2 text-xs font-light ${suggestNotice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-accent-1 bg-accent-1 text-primary'}`}>
                 {suggestNotice.message}
               </div>
             )}
@@ -422,7 +422,7 @@ export default function InviteView({ eventData }) {
                 type="button"
                 onClick={handleSubmitSuggestion}
                 disabled={isSuggesting}
-                className="flex-1 text-sm text-white font-medium bg-black py-2 px-4 rounded-md hover:bg-gray-800 disabled:bg-gray-400 transition"
+                className="flex-1 text-sm text-on-primary font-medium bg-primary py-2 px-4 rounded-md hover:opacity-90 disabled:opacity-50 transition"
               >
                 {isSuggesting ? "Pošiljam..." : "Pošlji predlog"}
               </button>

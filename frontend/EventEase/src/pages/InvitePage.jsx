@@ -59,7 +59,7 @@ export default function InvitePage() {
   if (error) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
-        <h2 className="text-xl font-serif text-gray-900 mb-2">Ups! Nekaj je šlo narobe</h2>
+        <h2 className="text-xl text-gray-900 mb-2">Ups! Nekaj je šlo narobe</h2>
         <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
       </div>
     );

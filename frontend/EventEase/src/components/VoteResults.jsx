@@ -102,7 +102,7 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-100 rounded-full h-1.5 hidden sm:block">
                   <div
-                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                    className="bg-accent-1 h-1.5 rounded-full transition-all duration-500"
                     style={{ width: `${yesPercentage}%` }}
                   />
                 </div>
@@ -113,7 +113,7 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-100 rounded-full h-1.5 hidden sm:block">
                   <div
-                    className="bg-yellow-400 h-1.5 rounded-full transition-all duration-500"
+                    className="bg-accent-2 h-1.5 rounded-full transition-all duration-500"
                     style={{ width: `${maybePercentage}%` }}
                   />
                 </div>

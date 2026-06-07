@@ -150,14 +150,14 @@ export default function CalendarPicker({
       } else if (dateStatus === "if_needed") {
         stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
       } else {
-        stateStyles = "bg-white border border-red-400 text-red-600 font-medium hover:bg-red-50";
+        stateStyles = "bg-red-500 text-white font-medium hover:bg-red-600";
       }
       }
     } else if (selectedDateStrings.includes(dateKey)) {
       stateStyles =
-        "bg-black text-white font-medium hover:bg-gray-800 ring-2 ring-offset-1 ring-black";
+        "bg-primary text-on-primary font-medium hover:opacity-95 ring-2 ring-offset-1 ring-primary";
     } else if (isSuggested) {
-      stateStyles = "ring-2 ring-blue-400 text-gray-900 hover:bg-gray-100";
+      stateStyles = "ring-2 ring-accent-1 text-gray-900 hover:bg-gray-100";
     }
 
     days.push({
@@ -284,7 +284,7 @@ export default function CalendarPicker({
           {allowedDates ? (
             <div className="flex justify-center gap-4 border-t border-gray-100 pt-3">
               <p className="flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded-sm border border-red-400 bg-white" />
+                <span className="h-3 w-3 rounded-sm bg-red-500" />
                 Ne
               </p>
               <p className="flex items-center gap-1.5">

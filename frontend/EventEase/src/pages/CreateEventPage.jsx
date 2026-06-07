@@ -180,13 +180,13 @@ export default function CreateEventWizard({ onCancel}) {
   if (adminLink && shareLink) {
     return (
       <div className="py-12 md:py-16 px-4 max-w-xl mx-auto animate-fade-in">
-        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 bg-accent-1 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
 
-        <h1 className="font-serif text-3xl font-normal text-gray-900 text-center mb-2">
+        <h1 className="text-3xl font-normal text-gray-900 text-center mb-2">
           Dogodek uspešno ustvarjen!
         </h1>
         <p className="text-sm text-gray-600 font-light text-center mb-8">
@@ -195,15 +195,15 @@ export default function CreateEventWizard({ onCancel}) {
 
         <div className="space-y-6">
           {/* LINK 1: FOR ADMIN */}
-          <div className="block p-4 border border-amber-200 rounded-xl bg-amber-50/50 shadow-sm">
-            <label className="block text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">
+          <div className="block p-4 border border-accent-2 rounded-xl bg-accent-2 shadow-sm">
+            <label className="block text-xs font-bold text-primary uppercase tracking-wider mb-2">
               🔑 Povezava za ustvarjalca
             </label>
-            <p className="text-xs text-amber-700 font-light mb-3">
+            <p className="text-xs text-primary font-light mb-3">
               S to povezavo lahko dodajate termine, spremljate rezultate in zaključite glasovanje. Ne delite je z drugimi!
             </p>
-            <div className="flex items-center gap-2 p-2 border border-amber-200 rounded-lg bg-white">
-              <input type="text" readOnly value={adminLink} className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all" />
+            <div className="flex items-center gap-2 p-2 border border-accent-2 rounded-lg bg-white">
+              <input type="text" readOnly value={adminLink} className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full select-all" />
               <button
                 type="button"
                 onClick={() => {
@@ -211,7 +211,7 @@ export default function CreateEventWizard({ onCancel}) {
                   setCopiedAdmin(true);
                   setTimeout(() => setCopiedAdmin(false), 2000);
                 }}
-                className={`text-xs font-medium py-2 px-4 rounded transition shrink-0 ${copiedAdmin ? "bg-emerald-700 text-white" : "bg-amber-800 text-white hover:bg-amber-900"}`}
+                className={`text-xs font-medium py-2 px-4 rounded transition shrink-0 ${copiedAdmin ? "bg-primary text-on-primary" : "bg-accent-2 text-on-primary hover:opacity-90"}`}
               >
                 {copiedAdmin ? "Kopirano!" : "Kopiraj"}
               </button>
@@ -219,15 +219,15 @@ export default function CreateEventWizard({ onCancel}) {
           </div>
 
           {/* LINK 2: FOR PARTICIPANTS */}
-          <div className="block p-4 border border-blue-200 rounded-xl bg-blue-50/50 shadow-sm">
-            <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">
+          <div className="block p-4 border border-accent-1 rounded-xl bg-accent-1 shadow-sm">
+            <label className="block text-xs font-bold text-primary uppercase tracking-wider mb-2">
               📢 Povezava za Udeležence
             </label>
-            <p className="text-xs text-blue-700 font-light mb-3">
+            <p className="text-xs text-primary font-light mb-3">
               To povezavo pošljite prijateljem, sodelavcem ali udeležencem, da bodo lahko oddali svoje glasove.
             </p>
-            <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-lg bg-white">
-              <input type="text" readOnly value={shareLink} className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full font-mono select-all" />
+            <div className="flex items-center gap-2 p-2 border border-accent-1 rounded-lg bg-white">
+              <input type="text" readOnly value={shareLink} className="bg-transparent text-sm text-gray-800 px-2 outline-none w-full select-all" />
               <button
                 type="button"
                 onClick={() => {
@@ -235,7 +235,7 @@ export default function CreateEventWizard({ onCancel}) {
                   setCopiedShare(true);
                   setTimeout(() => setCopiedShare(false), 2000);
                 }}
-                className={`text-xs font-medium py-2 px-4 rounded transition shrink-0 ${copiedShare ? "bg-emerald-700 text-white" : "bg-blue-800 text-white hover:bg-blue-900"}`}
+                className={`text-xs font-medium py-2 px-4 rounded transition shrink-0 ${copiedShare ? "bg-primary text-on-primary" : "bg-accent-1 text-primary hover:opacity-90"}`}
               >
                 {copiedShare ? "Kopirano!" : "Kopiraj"}
               </button>
@@ -253,7 +253,7 @@ export default function CreateEventWizard({ onCancel}) {
                 href={`https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-accent-1 hover:text-primary transition"
               >
                 WhatsApp
               </a>
@@ -273,7 +273,7 @@ export default function CreateEventWizard({ onCancel}) {
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-accent-1 hover:text-primary transition"
               >
                 Messenger
               </a>
@@ -282,7 +282,7 @@ export default function CreateEventWizard({ onCancel}) {
               <button
                 type="button"
                 onClick={handleNativeShare}
-                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition col-span-2 sm:col-span-1"
+                className="flex items-center justify-center gap-2 py-2 px-3 text-xs font-medium bg-primary text-on-primary rounded-lg hover:opacity-90 transition col-span-2 sm:col-span-1"
               >
                 📱 Drugo...
               </button>
@@ -290,16 +290,16 @@ export default function CreateEventWizard({ onCancel}) {
           </div>
 
           {/* Email-seznam*/}
-          <div className="block p-4 border border-violet-200 rounded-xl bg-violet-50/30 shadow-sm">
-            <label className="block text-xs font-bold text-violet-800 uppercase tracking-wider mb-2">
+          <div className="block p-4 border border-accent-3 rounded-xl bg-accent-3 shadow-sm">
+            <label className="block text-xs font-bold text-primary uppercase tracking-wider mb-2">
               ✉️ Pošlji vabila na e-naslove
             </label>
-            <p className="text-xs text-violet-700 font-light mb-3">
+            <p className="text-xs text-primary font-light mb-3">
               Vnesite e-poštne naslove povabljencev in jim neposredno pošljite povezavo.
             </p>
 
             {emailSuccess && (
-              <div className="mb-3 text-xs text-emerald-700 font-medium bg-emerald-50 p-2 rounded border border-emerald-200">
+              <div className="mb-3 text-xs text-primary font-medium bg-accent-1 p-2 rounded border border-accent-1">
                 ✓ Vabila so bila uspešno oddana v pošiljanje!
               </div>
             )}
@@ -311,26 +311,26 @@ export default function CreateEventWizard({ onCancel}) {
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddEmail(e)}
-                className="text-sm p-2.5 border border-gray-200 rounded-lg outline-none focus:border-violet-500 bg-white text-gray-950 transition flex-1 shadow-sm"
+                className="text-sm p-2.5 border border-gray-200 rounded-lg outline-none focus:border-primary bg-white text-gray-950 transition flex-1 shadow-sm"
               />
               <button
                 type="button"
                 onClick={handleAddEmail}
-                className="text-xs font-medium bg-violet-800 text-white px-4 rounded-lg hover:bg-violet-900 transition"
+                className="text-xs font-medium bg-accent-3 text-on-primary px-4 rounded-lg hover:opacity-90 transition"
               >
                 Dodaj
               </button>
             </div>
 
             {recipientEmails.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 p-2 bg-white border border-violet-100 rounded-lg max-h-24 overflow-y-auto mb-4">
+              <div className="flex flex-wrap gap-1.5 p-2 bg-white border border-accent-3 rounded-lg max-h-24 overflow-y-auto mb-4">
                 {recipientEmails.map((email, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1 text-xs bg-violet-50 text-violet-800 px-2 py-1 rounded-md border border-violet-200 font-light">
+                  <span key={idx} className="inline-flex items-center gap-1 text-xs bg-accent-3 text-primary px-2 py-1 rounded-md border border-accent-3 font-light">
                     {email}
                     <button
                       type="button"
                       onClick={() => handleRemoveEmail(idx)}
-                      className="text-violet-500 hover:text-violet-900 font-bold focus:outline-none ml-1"
+                      className="text-primary hover:text-accent-3 font-bold focus:outline-none ml-1"
                     >
                       ×
                     </button>
@@ -346,7 +346,7 @@ export default function CreateEventWizard({ onCancel}) {
               className={`w-full py-2.5 rounded-lg text-xs font-semibold tracking-wide transition ${
                 recipientEmails.length === 0
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-violet-800 text-white hover:bg-violet-900 shadow-sm"
+                  : "bg-accent-3 text-on-primary hover:opacity-90 shadow-sm"
               }`}
             >
               {sendingEmails ? "Pošiljanje..." : `Pošlji vabilo (${recipientEmails.length})`}
@@ -370,7 +370,7 @@ export default function CreateEventWizard({ onCancel}) {
   return (
     <div className="py-12 md:py-16 px-4 max-w-xl mx-auto">
       <div className="mb-10">
-        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">
+        <h1 className="text-3xl font-normal text-gray-900 mb-2">
           Ustvari nov dogodek
         </h1>
         <p className="text-sm text-gray-600 font-light">
@@ -379,7 +379,7 @@ export default function CreateEventWizard({ onCancel}) {
       </div>
 
       {notice && (
-        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+        <div ref={noticeRef} className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-accent-1 bg-accent-1 text-primary"}`}>
           {notice.message}
         </div>
       )}
@@ -424,7 +424,7 @@ export default function CreateEventWizard({ onCancel}) {
           <button type="button" className="flex-1 min-w-[140px] text-sm text-gray-600 font-medium bg-transparent border border-gray-300 py-3 px-5 rounded-md hover:bg-gray-50 hover:text-gray-900 transition" onClick={onCancel}>
             Prekliči
           </button>
-          <button type="submit" className="flex-1 min-w-[140px] text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 transition shadow-sm">
+          <button type="submit" className="flex-1 min-w-[140px] text-sm text-on-primary font-medium bg-primary py-3 px-5 rounded-md hover:opacity-90 active:scale-95 transition shadow-sm">
             Ustvari in deli
           </button>
         </div>

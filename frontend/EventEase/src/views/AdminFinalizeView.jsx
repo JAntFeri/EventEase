@@ -205,7 +205,7 @@ export default function AdminFinalizeView({
   if (error) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
-        <h2 className="text-xl font-serif text-gray-900 mb-2">
+        <h2 className="text-xl text-gray-900 mb-2">
           Napaka pri dostopu
         </h2>
         <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
@@ -234,11 +234,11 @@ export default function AdminFinalizeView({
           </button>
         )}
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase tracking-wider">
+          <span className="text-xs font-semibold text-primary bg-accent-2 px-2 py-0.5 rounded uppercase tracking-wider">
             Skrbniški pogled (Admin)
           </span>
         </div>
-        <h1 className="font-serif text-3xl font-normal text-gray-900 mb-2">
+        <h1 className="text-3xl font-normal text-gray-900 mb-2">
           {title}
         </h1>
         {description && (
@@ -251,7 +251,7 @@ export default function AdminFinalizeView({
       {notice && (
         <div
           ref={noticeRef}
-          className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}
+          className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-accent-1 bg-accent-1 text-primary"}`}
         >
           {notice.message}
         </div>
@@ -259,11 +259,11 @@ export default function AdminFinalizeView({
 
       {/* Suggestions section */}
       {pendingSuggestions.length > 0 && (
-        <div className="mb-8 border border-blue-100 bg-blue-50 rounded-xl p-4">
-          <h2 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-1">
+        <div className="mb-8 border border-accent-1 bg-accent-1 rounded-xl p-4">
+          <h2 className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
             Predlogi datumov udeležencev
           </h2>
-          <p className="text-xs text-blue-600 font-light mb-3">
+          <p className="text-xs text-primary font-light mb-3">
             Modro označeni datumi so predlogi udeležencev. Kliknite na datum za
             sprejem ali zavrnitev.
           </p>
@@ -284,7 +284,7 @@ export default function AdminFinalizeView({
             }
           />
           {pendingSuggestion && (
-            <div className="mt-3 p-3 bg-white border border-blue-200 rounded-lg">
+            <div className="mt-3 p-3 bg-white border border-accent-1 rounded-lg">
               <p className="text-sm text-gray-800 mb-2">
                 Predlog od <strong>{pendingSuggestion.suggested_by}</strong>:{" "}
                 {pendingSuggestion.start_time?.split("T")[0]}
@@ -295,7 +295,7 @@ export default function AdminFinalizeView({
                   onClick={() =>
                     handleSuggestionAction(pendingSuggestion.id, "accept")
                   }
-                  className="text-xs text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition"
+                  className="text-xs text-on-primary bg-primary px-3 py-1.5 rounded-md transition"
                 >
                   Sprejmi → dodaj v poll
                 </button>
@@ -344,7 +344,7 @@ export default function AdminFinalizeView({
                   key={slot.id}
                   className={`flex items-start gap-3 p-2 rounded-xl transition-colors ${
                     isChecked
-                      ? "bg-amber-50/60 ring-1 ring-amber-200"
+                      ? "bg-accent-2 ring-1 ring-accent-2"
                       : "hover:bg-gray-50"
                   }`}
                 >
@@ -352,7 +352,8 @@ export default function AdminFinalizeView({
                     <input
                       type="radio"
                       name="admin-finalize-slot"
-                      className="w-5 h-5 border-gray-300 text-amber-600 focus:ring-amber-500 accent-amber-600 cursor-pointer"
+                      className="w-5 h-5 border-gray-300 cursor-pointer"
+                      style={{ accentColor: 'var(--color-accent-2)' }}
                       checked={isChecked}
                       onChange={() => setSelectedSlotId(slot.id)}
                     />
@@ -366,7 +367,7 @@ export default function AdminFinalizeView({
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-100 text-blue-800 text-xs rounded-lg p-3 font-light leading-relaxed">
+        <div className="bg-accent-1 border border-accent-1 text-primary text-xs rounded-lg p-3 font-light leading-relaxed">
           <strong>Opozorilo:</strong> Izbira in potrditev termina bosta trajno
           zaključili glasovanje. Sistem bo samodejno poslal obvestila z datoteko
           koledarja vsem prijavljenim udeležencem.
@@ -376,7 +377,7 @@ export default function AdminFinalizeView({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full text-sm text-white font-medium bg-black py-3 px-5 rounded-md hover:bg-gray-800 active:scale-95 disabled:bg-gray-400 disabled:scale-100 transition shadow-sm"
+            className="w-full text-sm text-on-primary font-medium bg-primary py-3 px-5 rounded-md hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:scale-100 transition shadow-sm"
           >
             {isSubmitting
               ? "Zaklujem glasovanje..."

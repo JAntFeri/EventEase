@@ -1,0 +1,38 @@
+/* Theme variables for EventEase */
+:root {
+  --color-primary: #4E598C; /* primary purple */
+  --color-bg: #FFFFFF; /* background / secondary */
+  --color-accent-1: #F9C784; /* accent light yellow */
+  --color-accent-2: #FCAF58; /* accent orange */
+  --color-accent-3: #FF8C42; /* accent strong orange */
+  --color-on-primary: #FFFFFF;
+  --color-text: #111827;
+}
+
+/* Basic helpers used across components */
+.bg-primary { background-color: var(--color-primary) !important; }
+.text-primary { color: var(--color-primary) !important; }
+.border-primary { border-color: var(--color-primary) !important; }
+.text-on-primary { color: var(--color-on-primary) !important; }
+
+.bg-accent-1 { background-color: var(--color-accent-1) !important; }
+.text-accent-1 { color: var(--color-accent-1) !important; }
+.border-accent-1 { border-color: var(--color-accent-1) !important; }
+
+.bg-accent-2 { background-color: var(--color-accent-2) !important; }
+.text-accent-2 { color: var(--color-accent-2) !important; }
+.border-accent-2 { border-color: var(--color-accent-2) !important; }
+
+.bg-accent-3 { background-color: var(--color-accent-3) !important; }
+.text-accent-3 { color: var(--color-accent-3) !important; }
+.border-accent-3 { border-color: var(--color-accent-3) !important; }
+
+/* Soft backgrounds (lighter feel) */
+.bg-accent-1-soft { background-color: color-mix(in srgb, var(--color-accent-1) 20%, white 80%) !important; }
+.bg-accent-2-soft { background-color: color-mix(in srgb, var(--color-accent-2) 20%, white 80%) !important; }
+.bg-accent-3-soft { background-color: color-mix(in srgb, var(--color-accent-3) 20%, white 80%) !important; }
+
+/* Small utility helpers */
+.btn-primary { background-color: var(--color-primary); color: var(--color-on-primary); }
+.btn-accent-1 { background-color: var(--color-accent-1); color: var(--color-text); }
+.btn-accent-2 { background-color: var(--color-accent-2); color: var(--color-on-primary); }

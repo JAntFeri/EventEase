@@ -1,1 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=SN+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+@import "./styles/theme.css";
 @import "tailwindcss";
+
+html,
+body,
+#root,
+button,
+input,
+select,
+textarea {
+  font-family: "SN Pro", sans-serif;
+}
+
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+.landing-fade-up {
+  opacity: 0;
+  animation: landingFadeUp 0.65s ease-out forwards;
+}
+
+.landing-float {
+  animation: landingFloat 9s ease-in-out infinite;
+}
+
+.landing-float-delay {
+  animation: landingFloat 10.5s ease-in-out infinite;
+  animation-delay: 1.2s;
+}

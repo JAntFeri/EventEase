@@ -35,7 +35,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col antialiased text-gray-900 select-none">
       <nav className="flex items-center justify-between px-4 sm:px-8 h-16 border-b border-gray-100 bg-white sticky top-0 z-50">
-        <a href="#" className="font-serif text-lg font-medium text-gray-900 tracking-tight" onClick={navigateHome}>EventEase</a>
+        <a href="#" className="text-lg font-medium text-gray-900 tracking-tight" onClick={navigateHome}>EventEase</a>
       </nav>
 
       <main className="flex-grow">

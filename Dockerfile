@@ -28,4 +28,4 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY msmtprc /etc/msmtprc
 RUN chmod 644 /etc/msmtprc
 EXPOSE 8080
-CMD ["/bin/sh", "-c", "su ziguser -c \"DATABASE_URL=$DATABASE_URL /usr/local/bin/logic\" & exec nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "sed -i \"s/listen 8080;/listen ${PORT};/g\" /etc/nginx/nginx.conf && su ziguser -c \"DATABASE_URL=$DATABASE_URL /usr/local/bin/logic\" & exec nginx -g 'daemon off;'"]

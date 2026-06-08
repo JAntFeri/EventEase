@@ -3,17 +3,12 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import VoteResults from "../components/VoteResults";
 import CalendarPicker from "../components/CalendarPicker";
 
-export default function AdminFinalizeView({
-  eventData: propEventData,
-  onBack,
-}) {
+export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-
   const basicToken = searchParams.get("invite");
 
-  // Local state holds only data fetched from the API
   const [fetchedData, setFetchedData] = useState(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
@@ -25,23 +20,14 @@ export default function AdminFinalizeView({
   const [notice, setNotice] = useState(null);
   const noticeRef = useRef(null);
 
-  // --- Core Data Fetching Hook ---
   useEffect(() => {
-    // Only fetch if we don't have props data AND we have a token to fetch with
-    if (propEventData || !adminToken) {
-      return;
-    }
+    if (propEventData || !adminToken) return;
     async function fetchAdminData() {
       setApiLoading(true);
       try {
         const response = await fetch(`/api/polls/admin/${adminToken}`);
-        if (!response.ok) {
-          throw new Error(
-            "Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.",
-          );
-        }
+        if (!response.ok) throw new Error("Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.");
         const data = await response.json();
-
         setFetchedData({
           title: data.title,
           description: data.description,
@@ -53,7 +39,6 @@ export default function AdminFinalizeView({
           })),
           votes: data.votes || [],
         });
-
         setSuggestions(
           (data.suggestions || []).map((s) => ({
             ...s,
@@ -66,36 +51,23 @@ export default function AdminFinalizeView({
         setApiLoading(false);
       }
     }
-
     fetchAdminData();
   }, [adminToken, propEventData]);
 
-  // --- Notice Auto-Scroll Hook ---
   useEffect(() => {
-    if (notice && noticeRef.current) {
+    if (notice && noticeRef.current)
       noticeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
   }, [notice]);
 
   const handleSuggestionAction = async (suggestionId, action) => {
     if (action === "accept") {
       try {
-        const response = await fetch(
-          `/api/polls/admin/${adminToken}/accept-suggestion`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ suggestion_id: suggestionId }),
-          },
-        );
-        if (!response.ok) {
-          setNotice({
-            type: "error",
-            message: "Napaka pri sprejemu predloga.",
-          });
-          return;
-        }
-        // Refetch everything using the existing getAdminPoll endpoint
+        const response = await fetch(`/api/polls/admin/${adminToken}/accept-suggestion`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suggestion_id: suggestionId }),
+        });
+        if (!response.ok) { setNotice({ type: "error", message: "Napaka pri sprejemu predloga." }); return; }
         const refreshed = await fetch(`/api/polls/admin/${adminToken}`);
         if (refreshed.ok) {
           const data = await refreshed.json();
@@ -122,12 +94,9 @@ export default function AdminFinalizeView({
         return;
       }
     }
-
     setSuggestions((prev) =>
       prev.map((s) =>
-        s.id === suggestionId
-          ? { ...s, status: action === "accept" ? "accepted" : "rejected" }
-          : s,
+        s.id === suggestionId ? { ...s, status: action === "accept" ? "accepted" : "rejected" } : s,
       ),
     );
     setPendingSuggestion(null);
@@ -135,22 +104,9 @@ export default function AdminFinalizeView({
 
   const handleFinalize = async (e) => {
     e.preventDefault();
-    if (!adminToken) {
-      setNotice({
-        type: "error",
-        message: "Nimate skrbniških pravic za zaključek tega dogodka.",
-      });
-      return;
-    }
-    if (!selectedSlotId) {
-      setNotice({
-        type: "error",
-        message: "Prosimo, izberite končni termin za zaklep dogodka.",
-      });
-      return;
-    }
+    if (!adminToken) { setNotice({ type: "error", message: "Nimate skrbniških pravic za zaključek tega dogodka." }); return; }
+    if (!selectedSlotId) { setNotice({ type: "error", message: "Prosimo, izberite končni termin za zaklep dogodka." }); return; }
     setNotice(null);
-
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/polls/admin/${adminToken}/finalize`, {
@@ -158,45 +114,26 @@ export default function AdminFinalizeView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ final_slot_id: selectedSlotId }),
       });
-
       if (response.ok) {
-        setNotice({
-          type: "success",
-          message:
-            "Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko.",
-        });
+        setNotice({ type: "success", message: "Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko." });
         setTimeout(() => navigate("/"), 1200);
       } else {
-        setNotice({
-          type: "error",
-          message: "Napaka na strežniku pri zaključevanju glasovanja.",
-        });
+        setNotice({ type: "error", message: "Napaka na strežniku pri zaključevanju glasovanja." });
       }
-    } catch (error) {
-      console.error("Napaka pri zaključevanju polla:", error);
-      setNotice({
-        type: "error",
-        message: "Omrežna napaka pri zaključevanju.",
-      });
+    } catch {
+      setNotice({ type: "error", message: "Omrežna napaka pri zaključevanju." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- Derived State (Calculated instantly during render) ---
-  // 1. Determine error states
   let error = apiError;
-  if (!propEventData && !basicToken) {
-    error = "Napačna skrbniška povezava. Manjka identifikator povabila.";
-  }
-
-  // 2. Determine loading states
+  if (!propEventData && !basicToken) error = "Napačna skrbniška povezava. Manjka identifikator povabila.";
   const loading = !propEventData && !error && (apiLoading || !fetchedData);
 
-  // --- Conditional UI Returns ---
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen text-gray-500 text-sm font-light">
+      <div className="flex justify-center items-center min-h-screen text-sm" style={{ color: "var(--color-text)", opacity: 0.4 }}>
         Nalagam administratorske podatke...
       </div>
     );
@@ -205,158 +142,231 @@ export default function AdminFinalizeView({
   if (error) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen text-center px-4">
-        <h2 className="text-xl text-gray-900 mb-2">
-          Napaka pri dostopu
-        </h2>
-        <p className="text-sm text-gray-600 max-w-sm font-light">{error}</p>
+        <h2 className="text-xl font-medium mb-2" style={{ color: "var(--color-text)" }}>Napaka pri dostopu</h2>
+        <p className="text-sm max-w-sm" style={{ color: "var(--color-text)", opacity: 0.55 }}>{error}</p>
       </div>
     );
   }
 
   const eventData = propEventData || fetchedData;
-  const {
-    title,
-    description,
-    suggestedDates = [],
-    votes = [],
-  } = eventData || {};
+  const { title, description, suggestedDates = [], votes = [] } = eventData || {};
   const pendingSuggestions = suggestions.filter((s) => s.status === "pending");
 
   return (
-    <div className="py-12 md:py-16 px-4 max-w-2xl mx-auto">
-      <div className="mb-8 border-b border-gray-100 pb-6">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="text-xs text-gray-500 hover:text-black mb-4 flex items-center gap-1 transition"
-          >
-            ← Nazaj
-          </button>
-        )}
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-primary bg-accent-2 px-2 py-0.5 rounded uppercase tracking-wider">
-            Skrbniški pogled (Admin)
-          </span>
-        </div>
-        <h1 className="text-3xl font-normal text-gray-900 mb-2">
-          {title}
-        </h1>
-        {description && (
-          <p className="text-sm text-gray-600 font-light mt-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
-            {description}
-          </p>
-        )}
-      </div>
+    <div className="min-h-screen py-14 md:py-20 px-4" style={{ backgroundColor: "var(--color-bg)" }}>
+      <div className="max-w-2xl mx-auto">
 
-      {notice && (
-        <div
-          ref={noticeRef}
-          className={`mb-6 rounded-xl border px-4 py-3 text-xs font-light ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-accent-1 bg-accent-1 text-primary"}`}
-        >
-          {notice.message}
-        </div>
-      )}
-
-      {/* Suggestions section */}
-      {pendingSuggestions.length > 0 && (
-        <div className="mb-8 border border-accent-1 bg-accent-1 rounded-xl p-4">
-          <h2 className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-            Predlogi datumov udeležencev
-          </h2>
-          <p className="text-xs text-primary font-light mb-3">
-            Modro označeni datumi so predlogi udeležencev. Kliknite na datum za
-            sprejem ali zavrnitev.
-          </p>
-          <CalendarPicker
-            selectedDates={pendingSuggestions.map((s) => ({
-              id: s.id,
-              date: s.start_time.split("T")[0],
-              start_time: s.start_time,
-              end_time: s.end_time,
-            }))}
-            suggestions={pendingSuggestions.map((s) => ({
-              id: s.id,
-              date: s.start_time.split("T")[0],
-              suggested_by: s.suggested_by,
-            }))}
-            onSuggestionSelect={(date, dateSuggestions) =>
-              setPendingSuggestion(dateSuggestions[0])
-            }
-          />
-          {pendingSuggestion && (
-            <div className="mt-3 p-3 bg-white border border-accent-1 rounded-lg">
-              <p className="text-sm text-gray-800 mb-2">
-                Predlog od <strong>{pendingSuggestion.suggested_by}</strong>:{" "}
-                {pendingSuggestion.start_time?.split("T")[0]}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSuggestionAction(pendingSuggestion.id, "accept")
-                  }
-                  className="text-xs text-on-primary bg-primary px-3 py-1.5 rounded-md transition"
-                >
-                  Sprejmi → dodaj v poll
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSuggestionAction(pendingSuggestion.id, "reject")
-                  }
-                  className="text-xs text-gray-700 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-md transition"
-                >
-                  Zavrni
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingSuggestion(null)}
-                  className="text-xs text-gray-400 hover:text-gray-600 px-2 transition"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
+        {/* Header */}
+        <div className="mb-10">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1.5 text-xs font-medium mb-5 transition-opacity hover:opacity-60"
+              style={{ color: "var(--color-primary)" }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Nazaj
+            </button>
           )}
-        </div>
-      )}
 
-      <form onSubmit={handleFinalize} className="space-y-6">
-        <div>
-          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider block mb-1">
-            Trenutni rezultati glasovanja
-          </label>
-          <p className="text-xs text-gray-400 font-light mb-3">
-            Preglejte odgovore oddane s strani uporabnikov in izberite končni
-            potrjen termin za ta dogodek.
+          {/* Admin label — no coloured badge, just quiet uppercase text */}
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-4"
+            style={{ color: "var(--color-primary)", opacity: 0.5 }}
+          >
+            Skrbniški pogled
           </p>
+
+          <h1
+            className="text-4xl md:text-5xl leading-tight mb-3"
+            style={{ color: "var(--color-text)", fontFamily: "'Georgia', serif", fontWeight: 400 }}
+          >
+            {title}
+          </h1>
+
+          {description && (
+            <p
+              className="text-sm leading-relaxed mt-1"
+              style={{ color: "var(--color-text)", opacity: 0.5 }}
+            >
+              {description}
+            </p>
+          )}
+
+          {/* Single small accent stroke */}
+          <div className="mt-6 h-px w-12" style={{ backgroundColor: "var(--color-accent-2)" }} />
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-            Izberite končni termin:
-          </label>
+        {/* Notice */}
+        {notice && (
+          <div
+            ref={noticeRef}
+            className="mb-6 rounded-xl px-4 py-3 text-sm"
+            style={
+              notice.type === "error"
+                ? { backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" }
+                : {
+                    backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, var(--color-bg))",
+                    border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                    color: "var(--color-primary)",
+                  }
+            }
+          >
+            {notice.message}
+          </div>
+        )}
+
+        {/* Suggestions section — neutral background, accent only as its border */}
+        {pendingSuggestions.length > 0 && (
+          <div
+            className="mb-8 rounded-xl p-5"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--color-primary) 4%, var(--color-bg))",
+              border: "1.5px solid var(--color-accent-2)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              {/* Small accent dot */}
+              <div
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: "var(--color-accent-2)" }}
+              />
+              <h2
+                className="text-xs font-semibold uppercase tracking-widest"
+                style={{ color: "var(--color-text)", opacity: 0.6 }}
+              >
+                Predlogi udeležencev
+                <span
+                  className="ml-1.5 font-bold"
+                  style={{ color: "var(--color-primary)" }}
+                >
+                  ({pendingSuggestions.length})
+                </span>
+              </h2>
+            </div>
+            <p className="text-xs mb-4 pl-4" style={{ color: "var(--color-text)", opacity: 0.45 }}>
+              Kliknite na datum za sprejem ali zavrnitev predloga.
+            </p>
+
+            <CalendarPicker
+              selectedDates={pendingSuggestions.map((s) => ({
+                id: s.id,
+                date: s.start_time.split("T")[0],
+                start_time: s.start_time,
+                end_time: s.end_time,
+              }))}
+              suggestions={pendingSuggestions.map((s) => ({
+                id: s.id,
+                date: s.start_time.split("T")[0],
+                suggested_by: s.suggested_by,
+              }))}
+              onSuggestionSelect={(date, dateSuggestions) => setPendingSuggestion(dateSuggestions[0])}
+            />
+
+            {pendingSuggestion && (
+              <div
+                className="mt-4 p-4 rounded-xl"
+                style={{
+                  backgroundColor: "var(--color-bg)",
+                  border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
+                }}
+              >
+                <p className="text-sm mb-3" style={{ color: "var(--color-text)" }}>
+                  Predlog od{" "}
+                  <span className="font-semibold">{pendingSuggestion.suggested_by}</span>:{" "}
+                  <span style={{ color: "var(--color-primary)" }}>
+                    {pendingSuggestion.start_time?.split("T")[0]}
+                  </span>
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => handleSuggestionAction(pendingSuggestion.id, "accept")}
+                    className="text-xs font-medium px-4 py-2 rounded-lg transition-all hover:opacity-90"
+                    style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
+                  >
+                    Sprejmi → dodaj v poll
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSuggestionAction(pendingSuggestion.id, "reject")}
+                    className="text-xs font-medium px-4 py-2 rounded-lg border transition-all hover:opacity-70"
+                    style={{
+                      borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                      color: "var(--color-text)",
+                      backgroundColor: "transparent",
+                    }}
+                  >
+                    Zavrni
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingSuggestion(null)}
+                    className="text-xs px-2 py-2 rounded-lg transition-all hover:opacity-50"
+                    style={{ color: "var(--color-text)", opacity: 0.35 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Finalize form */}
+        <form onSubmit={handleFinalize} className="space-y-6">
+          <div>
+            <label
+              className="block text-xs font-semibold uppercase tracking-widest mb-1"
+              style={{ color: "var(--color-text)", opacity: 0.45 }}
+            >
+              Rezultati glasovanja
+            </label>
+            <p className="text-xs" style={{ color: "var(--color-text)", opacity: 0.4 }}>
+              Preglejte odgovore in izberite končni potrjeni termin.
+            </p>
+          </div>
+
           <div className="space-y-2">
             {suggestedDates.map((slot) => {
               const isChecked = selectedSlotId === slot.id;
               return (
                 <div
                   key={slot.id}
-                  className={`flex items-start gap-3 p-2 rounded-xl transition-colors ${
-                    isChecked
-                      ? "bg-accent-2 ring-1 ring-accent-2"
-                      : "hover:bg-gray-50"
-                  }`}
+                  onClick={() => setSelectedSlotId(slot.id)}
+                  className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all"
+                  style={{
+                    border: isChecked
+                      ? "1.5px solid var(--color-primary)"
+                      : "1.5px solid color-mix(in srgb, var(--color-primary) 12%, transparent)",
+                    backgroundColor: isChecked
+                      ? "color-mix(in srgb, var(--color-primary) 5%, var(--color-bg))"
+                      : "transparent",
+                  }}
                 >
-                  <div className="pt-4 pl-2">
-                    <input
-                      type="radio"
-                      name="admin-finalize-slot"
-                      className="w-5 h-5 border-gray-300 cursor-pointer"
-                      style={{ accentColor: 'var(--color-accent-2)' }}
-                      checked={isChecked}
-                      onChange={() => setSelectedSlotId(slot.id)}
-                    />
+                  {/* Custom radio — primary fill, accent as a hint only on selected */}
+                  <div className="pt-4 pl-1 flex-shrink-0">
+                    <div
+                      className="w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all"
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        border: isChecked
+                          ? "2px solid var(--color-primary)"
+                          : "2px solid color-mix(in srgb, var(--color-primary) 30%, transparent)",
+                        backgroundColor: isChecked ? "var(--color-primary)" : "transparent",
+                      }}
+                    >
+                      {isChecked && (
+                        <div
+                          className="rounded-full"
+                          style={{ width: "6px", height: "6px", backgroundColor: "var(--color-on-primary)" }}
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="flex-1 pointer-events-none">
                     <VoteResults suggestedDates={[slot]} votes={votes} />
@@ -365,26 +375,32 @@ export default function AdminFinalizeView({
               );
             })}
           </div>
-        </div>
 
-        <div className="bg-accent-1 border border-accent-1 text-primary text-xs rounded-lg p-3 font-light leading-relaxed">
-          <strong>Opozorilo:</strong> Izbira in potrditev termina bosta trajno
-          zaključili glasovanje. Sistem bo samodejno poslal obvestila z datoteko
-          koledarja vsem prijavljenim udeležencem.
-        </div>
+          {/* Warning — quiet, no accent fill */}
+          <div
+            className="rounded-xl px-4 py-3.5 text-xs leading-relaxed"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--color-primary) 5%, var(--color-bg))",
+              border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
+              color: "var(--color-text)",
+              opacity: 0.7,
+            }}
+          >
+            <strong style={{ opacity: 1 }}>Opozorilo:</strong> Izbira in potrditev termina bosta trajno
+            zaključili glasovanje. Sistem bo samodejno poslal obvestila z datoteko koledarja vsem
+            prijavljenim udeležencem.
+          </div>
 
-        <div className="pt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full text-sm text-on-primary font-medium bg-primary py-3 px-5 rounded-md hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:scale-100 transition shadow-sm"
+            className="w-full py-3.5 px-6 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:scale-100"
+            style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
           >
-            {isSubmitting
-              ? "Zaklujem glasovanje..."
-              : "Potrdi izbran termin in obvesti vse"}
+            {isSubmitting ? "Zaklujem glasovanje..." : "Potrdi izbran termin in obvesti vse"}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

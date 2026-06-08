@@ -458,21 +458,7 @@ if (adminLink && shareLink) {
           <CalendarPicker selectedDates={pollDates} onChange={setPollDates} isPollMode={true} />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-[var(--color-text)]/80 uppercase tracking-wider" htmlFor="tasks">
-            Dodelitev nalog (Ena naloga na vrstico)
-          </label>
-          <textarea
-            id="tasks"
-            name="tasks"
-            rows="2"
-            className="text-base p-3 border border-gray-200 dark:border-gray-800 rounded-lg outline-none focus:border-[var(--color-accent-2)] focus:ring-1 focus:ring-[var(--color-accent-2)] bg-white dark:bg-gray-900 text-[var(--color-text)] transition w-full shadow-sm"
-            placeholder="npr. Rezervacija prostora&#10;Priprava gradiva"
-            value={formData.tasks}
-            onChange={handleChange}
-          />
-        </div>
-
+       
         <div className="flex flex-wrap-reverse gap-3 pt-4">
           <button
             type="button"

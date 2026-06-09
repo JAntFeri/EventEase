@@ -73,13 +73,7 @@ export default function CalendarPicker({
   }, {});
 
   const getTimeLabel = (item) => {
-    const startTime = getTimeStr(item);
-    if (!item?.end_time) return startTime;
-    const endTime = item.end_time.includes("T")
-      ? item.end_time.split("T")[1]?.substring(0, 5)
-      : item.end_time.split(" ")[1]?.substring(0, 5);
-    if (!endTime || endTime === startTime) return startTime;
-    return `${startTime} - ${endTime}`;
+    return getTimeStr(item);
   };
 
   const getVoteKey = (item) => item?.id || getDateStr(item);

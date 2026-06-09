@@ -16,6 +16,7 @@ export default function CalendarPicker({
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+  const todayISO = new Date().toISOString().split('T')[0];
 
   const monthNames = [
     "Januar", "Februar", "Marec", "April", "Maj", "Junij",
@@ -67,6 +68,7 @@ export default function CalendarPicker({
 
   const handleDateClick = (day) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (dateStr < todayISO) return; // disallow past dates
     if (allowedDates && !allowedDates.includes(dateStr)) return;
 
     if (allowedDates) {
@@ -125,12 +127,15 @@ export default function CalendarPicker({
   for (let i = 0; i < blankCells; i++) days.push({ type: "blank", val: i });
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const isPast = dateKey < todayISO;
     const dateSuggestions = suggestions.filter((s) => s.date === dateKey);
     const isSuggested = dateSuggestions.length > 0;
 
     let stateStyles = "hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text)]";
 
-    if (allowedDates) {
+    if (isPast) {
+      stateStyles = "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-40";
+    } else if (allowedDates) {
       if (!allowedDates.includes(dateKey)) {
         stateStyles = "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-40";
       } else {
@@ -157,6 +162,7 @@ export default function CalendarPicker({
       val: d,
       key: dateKey,
       stateStyles,
+      isPast,
       isSuggested,
       dateSuggestions,
     });
@@ -211,6 +217,7 @@ export default function CalendarPicker({
                 type="button"
                 className={`aspect-square rounded-lg text-sm transition flex flex-col items-center justify-center w-full relative ${item.stateStyles}`}
                 onClick={() => {
+                  if (item.isPast) return;
                   if (item.isSuggested && onSuggestionSelect) {
                     onSuggestionSelect(item.key, item.dateSuggestions);
                   }

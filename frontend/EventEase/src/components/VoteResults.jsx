@@ -58,9 +58,11 @@ export default function VoteResults({ suggestedDates = [], votes = [] }) {
   };
 
   const formatTime = (slot) => {
-    if (!slot.start_time || !slot.start_time.includes("T")) return null;
-    const time = slot.start_time.split("T")[1]?.slice(0, 5);
-    return time && time !== "00:00" ? time : null;
+    if (!slot.start_time) return null;
+    const rawTime = slot.start_time.includes("T")
+      ? slot.start_time.split("T")[1]
+      : slot.start_time.split(" ")[1];
+    return rawTime ? rawTime.slice(0, 5) : null;
   };
 
   const noVotesCast = votes.length === 0;

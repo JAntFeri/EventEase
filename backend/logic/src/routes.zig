@@ -78,7 +78,89 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const 
         return error.MsmtpFailed;
     }
 }
+fn sendEmailWithIcs(
+    alloc: std.mem.Allocator,
+    io: std.Io,
+    rng: std.Random,
+    to: []const u8,
+    subject: []const u8,
+    body: []const u8,
+    ics_content: ?[]const u8,
+) !void {
+    // Build boundary and content first
+    var rand_bytes: [8]u8 = undefined;
+    rng.bytes(&rand_bytes);
+    const boundary = std.fmt.bytesToHex(rand_bytes, .lower);
 
+    const content = if (ics_content) |ics| blk: {
+        const encoded_len = std.base64.standard.Encoder.calcSize(ics.len);
+        const encoded = try alloc.alloc(u8, encoded_len);
+        defer alloc.free(encoded);
+        _ = std.base64.standard.Encoder.encode(encoded, ics);
+
+        break :blk try std.fmt.allocPrint(alloc,
+            \\From: poll@yourserver.com
+            \\To: {s}
+            \\Subject: {s}
+            \\MIME-Version: 1.0
+            \\Content-Type: multipart/mixed; boundary="{s}"
+            \\
+            \\--{s}
+            \\Content-Type: text/plain; charset=utf-8
+            \\
+            \\{s}
+            \\
+            \\--{s}
+            \\Content-Type: text/calendar; charset=utf-8; method=REQUEST; name="event.ics"
+            \\Content-Disposition: attachment; filename="event.ics"
+            \\Content-Transfer-Encoding: base64
+            \\
+            \\{s}
+            \\--{s}--
+        , .{ to, subject, boundary, boundary, body, boundary, encoded, boundary });
+    } else try std.fmt.allocPrint(alloc,
+        \\From: poll@yourserver.com
+        \\To: {s}
+        \\Subject: {s}
+        \\
+        \\{s}
+    , .{ to, subject, body });
+    defer alloc.free(content);
+
+    // Generate a unique temp filename
+    var file_rand_bytes: [8]u8 = undefined;
+    rng.bytes(&file_rand_bytes);
+    const unique = std.fmt.bytesToHex(file_rand_bytes, .lower);
+    const filename = try std.fmt.allocPrint(alloc, "/tmp/email_{s}.tmp", .{unique});
+    defer alloc.free(filename);
+
+    // Write content to temp file
+    const file = try std.Io.Dir.cwd().createFile(io, filename, .{ .read = true, .truncate = true });
+    defer file.close(io);
+    defer std.Io.Dir.cwd().deleteFile(io, filename) catch {};
+
+    var buf: [4096]u8 = undefined;
+    var fw = file.writer(io, &buf);
+    var writer = &fw.interface;
+    try writer.writeAll(content);
+    try writer.flush();
+    try file.sync(io);
+
+    // Send via msmtp
+    const cmd = try std.fmt.allocPrint(alloc, "msmtp --file=/etc/msmtprc --timeout=5 -t < '{s}'", .{filename});
+    defer alloc.free(cmd);
+
+    const result = try std.process.run(alloc, io, .{
+        .argv = &[_][]const u8{ "sh", "-c", cmd },
+    });
+    defer alloc.free(result.stdout);
+    defer alloc.free(result.stderr);
+
+    if (result.term != .exited or result.term.exited != 0) {
+        std.log.err("msmtp failed: {s}", .{result.stderr});
+        return error.MsmtpFailed;
+    }
+}
 fn sendVoteNotification(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, organizer_email: []const u8, poll_title: []const u8, participant_name: []const u8) !void {
     const subject = try std.fmt.allocPrint(alloc, "New vote in poll: {s}", .{poll_title});
     defer alloc.free(subject);
@@ -121,20 +203,35 @@ fn sendFinalizationEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, 
     try sendEmail(alloc, io, rng, organizer_email, subject, body);
 }
 
-fn sendParticipantFinalizationEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, participant_email: []const u8, participant_name: []const u8, poll_title: []const u8, final_slot_start: []const u8, final_slot_end: []const u8) !void {
+fn sendParticipantFinalizationEmail(
+    alloc: std.mem.Allocator,
+    io: std.Io,
+    rng: std.Random,
+    participant_email: []const u8,
+    participant_name: []const u8,
+    poll_title: []const u8,
+    final_slot_start: []const u8,
+    final_slot_end: []const u8,
+) !void {
     const subject = try std.fmt.allocPrint(alloc, "Poll finalized: {s}", .{poll_title});
     defer alloc.free(subject);
+
     const body = try std.fmt.allocPrint(alloc,
         \\Hello {s},
         \\
         \\The poll "{s}" has been finalized.
-        \\
         \\The chosen time slot is: {s} - {s}
+        \\
+        \\An .ics calendar file is attached — open it to add this event to your calendar.
         \\
         \\Thank you for participating.
     , .{ participant_name, poll_title, final_slot_start, final_slot_end });
     defer alloc.free(body);
-    try sendEmail(alloc, io, rng, participant_email, subject, body);
+
+    const ics = try buildIcsContent(alloc, rng, poll_title, final_slot_start, final_slot_end);
+    defer alloc.free(ics);
+
+    try sendEmailWithIcs(alloc, io, rng, participant_email, subject, body, ics);
 }
 
 // ----------------------------------------------------------------------------
@@ -460,6 +557,51 @@ pub fn getAdminPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
         .suggestions = suggestions,
     }, .{});
 }
+// funkcije za koledar
+fn formatIcsTimestamp(buf: []u8, iso: []const u8) []const u8 {
+    // Convert "2024-06-15T14:00:00Z" → "20240615T140000Z"
+    var out_i: usize = 0;
+    for (iso) |c| {
+        if (c == '-' or c == ':') continue;
+        buf[out_i] = c;
+        out_i += 1;
+    }
+    return buf[0..out_i];
+}
+
+fn buildIcsContent(
+    alloc: std.mem.Allocator,
+    rng: std.Random,
+    poll_title: []const u8,
+    start_time: []const u8,
+    end_time: []const u8,
+) ![]const u8 {
+    var uid_bytes: [16]u8 = undefined;
+    rng.bytes(&uid_bytes);
+    const uid_hex = std.fmt.bytesToHex(uid_bytes, .lower);
+
+    var start_buf: [32]u8 = undefined;
+    var end_buf: [32]u8 = undefined;
+    const start_ics = formatIcsTimestamp(&start_buf, start_time);
+    const end_ics = formatIcsTimestamp(&end_buf, end_time);
+
+    return std.fmt.allocPrint(alloc,
+        \\BEGIN:VCALENDAR
+        \\VERSION:2.0
+        \\PRODID:-//YourApp//Poll//EN
+        \\METHOD:REQUEST
+        \\BEGIN:VEVENT
+        \\UID:{s}@yourserver.com
+        \\DTSTART:{s}
+        \\DTEND:{s}
+        \\SUMMARY:{s}
+        \\DESCRIPTION:This event was scheduled via a poll.
+        \\END:VEVENT
+        \\END:VCALENDAR
+    , .{ uid_hex, start_ics, end_ics, poll_title });
+}
+
+
 
 pub fn shareEmail(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const body = req.body() orelse {
@@ -495,8 +637,6 @@ pub fn shareEmail(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
             std.log.err("shareEmail: failed to send to {s}: {}", .{ recipient, err });
         };
     }
-   
-
 
     try res.json(.{ .success = true }, .{});
 }

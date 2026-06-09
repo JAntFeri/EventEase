@@ -12,11 +12,12 @@ export default function CalendarPicker({
 }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeDateStr, setActiveDateStr] = useState(null);
+  const [expandedDateStr, setExpandedDateStr] = useState(null);
   const [lastSelectedTime, setLastSelectedTime] = useState("12:00");
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const todayISO = new Date().toISOString().split('T')[0];
+  const todayISO = new Date().toISOString().split("T")[0];
 
   const monthNames = [
     "Januar", "Februar", "Marec", "April", "Maj", "Junij",
@@ -31,6 +32,9 @@ export default function CalendarPicker({
 
   const getDateStr = (item) => {
     if (!item) return "";
+    if (typeof item === "string") {
+      return item.includes("T") ? item.split("T")[0] : item.split(" ")[0];
+    }
     if (item.date) return item.date;
     if (item.start_time) {
       return item.start_time.includes("T")
@@ -53,6 +57,71 @@ export default function CalendarPicker({
   };
 
   const selectedDateStrings = selectedDates.map(getDateStr);
+  const groupedSelectedDates = selectedDates.reduce((acc, item) => {
+    const dateStr = getDateStr(item);
+    if (!dateStr) return acc;
+    if (!acc[dateStr]) acc[dateStr] = [];
+    acc[dateStr].push(item);
+    return acc;
+  }, {});
+  const groupedSuggestions = suggestions.reduce((acc, item) => {
+    const dateStr = getDateStr(item) || item.date;
+    if (!dateStr) return acc;
+    if (!acc[dateStr]) acc[dateStr] = [];
+    acc[dateStr].push(item);
+    return acc;
+  }, {});
+
+  const getTimeLabel = (item) => {
+    const startTime = getTimeStr(item);
+    if (!item?.end_time) return startTime;
+    const endTime = item.end_time.includes("T")
+      ? item.end_time.split("T")[1]?.substring(0, 5)
+      : item.end_time.split(" ")[1]?.substring(0, 5);
+    if (!endTime || endTime === startTime) return startTime;
+    return `${startTime} - ${endTime}`;
+  };
+
+  const getVoteKey = (item) => item?.id || getDateStr(item);
+
+  const setVoteStatus = (item, nextStatus) => {
+    if (!onDateStatusesChange) return;
+    const key = getVoteKey(item);
+    if (!key) return;
+
+    const updatedStatuses = { ...dateStatuses };
+    if (!nextStatus || nextStatus === "no") {
+      delete updatedStatuses[key];
+    } else {
+      updatedStatuses[key] = nextStatus;
+    }
+
+    onDateStatusesChange(updatedStatuses);
+  };
+
+  const cycleVoteStatus = (item) => {
+    const key = getVoteKey(item);
+    const currentStatus = dateStatuses[key] || "no";
+    const nextStatus =
+      currentStatus === "no"
+        ? "yes"
+        : currentStatus === "yes"
+          ? "if_needed"
+          : "no";
+    setVoteStatus(item, nextStatus);
+  };
+
+  const voteStatusLabel = (status) => {
+    if (status === "yes") return "Da";
+    if (status === "if_needed") return "Če bo potrebno";
+    return "Ne";
+  };
+
+  const voteStatusStyles = {
+    yes: "bg-green-500 text-white hover:bg-green-600",
+    if_needed: "bg-yellow-400 text-gray-900 hover:bg-yellow-500",
+    no: "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
+  };
 
   const formatBackendSlot = (dateStr, timeStr) => {
     const startTimeStr = `${dateStr}T${timeStr}:00`;
@@ -66,10 +135,36 @@ export default function CalendarPicker({
     };
   };
 
-  const handleDateClick = (day) => {
+  const handleDateClick = (day, dayItems = []) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dateSuggestionItems = groupedSuggestions[dateStr] || [];
     if (dateStr < todayISO) return; // disallow past dates
     if (allowedDates && !allowedDates.includes(dateStr)) return;
+
+    if (isPollMode && allowedDates) {
+      if (dayItems.length > 1) {
+        setExpandedDateStr((current) => (current === dateStr ? null : dateStr));
+        return;
+      }
+
+      const matchedSlot = dayItems[0] || selectedDates.find((d) => getDateStr(d) === dateStr);
+      if (!matchedSlot) return;
+
+      cycleVoteStatus(matchedSlot);
+      setExpandedDateStr(null);
+      return;
+    }
+
+    if (isPollMode) {
+      const updatedDates = selectedDateStrings.includes(dateStr)
+        ? selectedDates.filter((d) => getDateStr(d) !== dateStr)
+        : [...selectedDates, formatBackendSlot(dateStr, lastSelectedTime)];
+
+      if (onChange) onChange(updatedDates);
+      if (expandedDateStr === dateStr) setExpandedDateStr(null);
+      setActiveDateStr(selectedDateStrings.includes(dateStr) ? null : dateStr);
+      return;
+    }
 
     if (allowedDates) {
       const matchedSlot = selectedDates.find((d) => getDateStr(d) === dateStr);
@@ -91,6 +186,11 @@ export default function CalendarPicker({
       }
 
       if (onDateStatusesChange) onDateStatusesChange(updatedStatuses);
+      return;
+    }
+
+    if (dateSuggestionItems.length > 1) {
+      setExpandedDateStr((current) => (current === dateStr ? null : dateStr));
       return;
     }
 
@@ -128,8 +228,11 @@ export default function CalendarPicker({
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     const isPast = dateKey < todayISO;
-    const dateSuggestions = suggestions.filter((s) => s.date === dateKey);
+    const dateSuggestions = groupedSuggestions[dateKey] || [];
+    const dateSlots = groupedSelectedDates[dateKey] || [];
     const isSuggested = dateSuggestions.length > 0;
+    const isExpanded = expandedDateStr === dateKey;
+    const selectedSlotCount = dateSlots.length;
 
     let stateStyles = "hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--color-text)]";
 
@@ -139,20 +242,21 @@ export default function CalendarPicker({
       if (!allowedDates.includes(dateKey)) {
         stateStyles = "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-40";
       } else {
-        const matchedSlot = selectedDates.find(d => getDateStr(d) === dateKey);
-        const statusKey = matchedSlot?.id || dateKey;
-        const dateStatus = dateStatuses[statusKey] || "no";
-        if (dateStatus === "yes") {
+        const activeStatuses = dateSlots
+          .map((slot) => dateStatuses[getVoteKey(slot)] || "no")
+          .filter((status) => status !== "no");
+        if (activeStatuses.includes("yes")) {
           stateStyles = "bg-green-500 text-white font-medium hover:bg-green-600";
-        } else if (dateStatus === "if_needed") {
+        } else if (activeStatuses.includes("if_needed")) {
           stateStyles = "bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500";
         } else {
           stateStyles = "bg-red-500 text-white font-medium hover:bg-red-600";
         }
       }
     } else if (selectedDateStrings.includes(dateKey)) {
-      stateStyles =
-        "bg-[var(--color-primary)] text-[var(--color-on-primary)] font-medium hover:opacity-95 ring-2 ring-offset-1 ring-[var(--color-primary)]";
+      stateStyles = isExpanded
+        ? "bg-[var(--color-primary)] text-[var(--color-on-primary)] font-medium ring-2 ring-offset-1 ring-[var(--color-primary)]"
+        : "bg-[var(--color-primary)] text-[var(--color-on-primary)] font-medium hover:opacity-95 ring-2 ring-offset-1 ring-[var(--color-primary)]";
     } else if (isSuggested) {
       stateStyles = "ring-2 ring-[var(--color-accent-1)] text-[var(--color-text)] hover:bg-[var(--color-accent-1)]/20";
     }
@@ -165,6 +269,9 @@ export default function CalendarPicker({
       isPast,
       isSuggested,
       dateSuggestions,
+      dateSlots,
+      isExpanded,
+      selectedSlotCount,
     });
   }
 
@@ -206,8 +313,9 @@ export default function CalendarPicker({
       {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1 text-center">
         {days.map((item) => {
-          const matchedItem = selectedDates.find((d) => getDateStr(d) === item.key);
-          const displayTime = matchedItem ? getTimeStr(matchedItem) : "";
+          const matchedItems = item.dateSlots || [];
+          const displayTime = matchedItems.length === 1 ? getTimeLabel(matchedItems[0]) : "";
+          const displayCount = matchedItems.length > 1 ? `+${matchedItems.length}` : "";
 
           return item.type === "blank" ? (
             <span key={`b-${item.val}`} className="aspect-square" />
@@ -218,16 +326,17 @@ export default function CalendarPicker({
                 className={`aspect-square rounded-lg text-sm transition flex flex-col items-center justify-center w-full relative ${item.stateStyles}`}
                 onClick={() => {
                   if (item.isPast) return;
-                  if (item.isSuggested && onSuggestionSelect) {
+                  if (item.isSuggested && onSuggestionSelect && !isPollMode && item.dateSuggestions.length <= 1) {
                     onSuggestionSelect(item.key, item.dateSuggestions);
+                    return;
                   }
-                  handleDateClick(item.val);
+                  handleDateClick(item.val, item.dateSlots);
                 }}
               >
                 <span>{item.val}</span>
                 {selectedDateStrings.includes(item.key) && (
                   <span className="text-[9px] opacity-80 block -mt-0.5 font-light">
-                    {displayTime}
+                    {displayCount || displayTime}
                   </span>
                 )}
               </button>
@@ -236,6 +345,136 @@ export default function CalendarPicker({
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10 hidden group-hover:block w-max max-w-[140px]">
                   <div className="bg-gray-900 dark:bg-gray-700 text-white text-[10px] rounded px-2 py-1 leading-snug shadow-md border border-[var(--color-accent-1)]">
                     {item.dateSuggestions.map((s) => s.suggested_by).join(", ")}
+                  </div>
+                </div>
+              )}
+
+              {item.isExpanded && !isPollMode && item.dateSuggestions.length > 1 && (
+                <div className="absolute left-1/2 top-full z-20 mt-2 w-72 -translate-x-1/2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 shadow-lg text-left">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        Predlogi terminov
+                      </p>
+                      <p className="text-xs font-medium text-[var(--color-text)]">
+                        {item.key.split("-")[2]}. {monthNames[month]}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-[10px] font-medium px-2 py-1 rounded-md border border-gray-200 dark:border-gray-800 text-gray-500 hover:text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setExpandedDateStr(null);
+                      }}
+                    >
+                      Zapri
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {item.dateSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion.id || `${item.key}-${suggestion.suggested_by}`}
+                        type="button"
+                        className="w-full rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 px-3 py-2 text-left transition hover:border-[var(--color-accent-1)] hover:bg-[var(--color-accent-1)]/10"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onSuggestionSelect?.(item.key, item.dateSuggestions, suggestion);
+                          setExpandedDateStr(null);
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-medium text-[var(--color-text)]">
+                              {getTimeLabel(suggestion)}
+                            </p>
+                            <p className="text-[10px] text-gray-400 truncate">
+                              {suggestion.suggested_by}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+                            Izberi
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {item.isExpanded && isPollMode && item.dateSlots.length > 0 && (
+                <div className="absolute left-1/2 top-full z-20 mt-2 w-72 -translate-x-1/2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 shadow-lg text-left">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        Možni termini
+                      </p>
+                      <p className="text-xs font-medium text-[var(--color-text)]">
+                        {item.key.split("-")[2]}. {monthNames[month]}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-[10px] font-medium px-2 py-1 rounded-md border border-gray-200 dark:border-gray-800 text-gray-500 hover:text-[var(--color-text)] hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setExpandedDateStr(null);
+                      }}
+                    >
+                      Zapri
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {item.dateSlots.map((slot) => {
+                      const slotKey = getVoteKey(slot);
+                      const currentStatus = dateStatuses[slotKey] || "no";
+                      return (
+                        <div
+                          key={slotKey}
+                          className="rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 px-2.5 py-2"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-[var(--color-text)] truncate">
+                                {getTimeLabel(slot)}
+                              </p>
+                              {slot.end_time && (
+                                <p className="text-[10px] text-gray-400">
+                                  {slot.end_time.includes("T")
+                                    ? slot.end_time.split("T")[0]
+                                    : slot.end_time.split(" ")[0]}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                              {voteStatusLabel(currentStatus)}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-1">
+                            {[
+                              ["yes", "Da"],
+                              ["if_needed", "Če bo potrebno"],
+                              ["no", "Ne"],
+                            ].map(([status, label]) => (
+                              <button
+                                key={status}
+                                type="button"
+                                className={`rounded-md px-2 py-1 text-[10px] font-semibold transition ${voteStatusStyles[status]}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setVoteStatus(slot, status);
+                                }}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

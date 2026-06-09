@@ -29,7 +29,7 @@ EXPOSE 8080
 CMD ["/bin/sh", "-c", "\
   printf 'defaults\nauth on\ntls on\ntls_trust_file /etc/ssl/certs/ca-certificates.crt\n\naccount brevo\nhost %s\nport %s\nfrom %s\nuser %s\npassword %s\n\naccount default : brevo\n' \
     \"$BREVO_HOST\" \"$BREVO_PORT\" \"$BREVO_USER\" \"$BREVO_USER\" \"$BREVO_PASSWORD\" > /etc/msmtprc && \
-  chmod 600 /etc/msmtprc && \
+  chmod 644 /etc/msmtprc && \
   sed -i \"s/listen 8080;/listen ${PORT:-8080};/g\" /etc/nginx/nginx.conf && \
   su ziguser -c \"DATABASE_URL=$DATABASE_URL /usr/local/bin/logic\" & \
   exec nginx -g 'daemon off;'"]

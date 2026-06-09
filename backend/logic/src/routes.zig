@@ -100,7 +100,7 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subject: []co
     defer alloc.free(payload);
 
     const cmd = try std.fmt.allocPrint(alloc,
-        \\curl -s -w "%{{http_code}}" -o /dev/null -X POST https://api.resend.com/emails \
+        \\curl -s -w "%{{http_code}}" -o /tmp/resend_out.txt -X POST https://api.resend.com/emails \
         \\  -H "Authorization: Bearer {s}" \
         \\  -H "Content-Type: application/json" \
         \\  -d '{s}'
@@ -115,7 +115,13 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subject: []co
 
     const status = std.mem.trim(u8, result.stdout, " \n\r");
     if (!std.mem.startsWith(u8, status, "2")) {
-        std.log.err("Resend API status: {s}", .{status});
+        // Read and log the response body
+        const cat_result = try std.process.run(alloc, io, .{
+            .argv = &[_][]const u8{ "sh", "-c", "cat /tmp/resend_out.txt" },
+        });
+        defer alloc.free(cat_result.stdout);
+        defer alloc.free(cat_result.stderr);
+        std.log.err("Resend API status: {s}, body: {s}", .{ status, cat_result.stdout });
         return error.EmailFailed;
     }
 }

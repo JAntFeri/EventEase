@@ -41,6 +41,34 @@ fn emailsEnabled() bool {
     return slice.len == 0 or std.mem.eql(u8, slice, "0") or std.mem.eql(u8, slice, "false");
 }
 
+fn buildHtmlEmail(alloc: std.mem.Allocator, body_text: []const u8) ![]const u8 {
+    // escape the plain text for HTML
+    var escaped = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
+    defer escaped.deinit(alloc);
+    for (body_text) |c| {
+        switch (c) {
+            '<' => try escaped.appendSlice(alloc, "&lt;"),
+            '>' => try escaped.appendSlice(alloc, "&gt;"),
+            '&' => try escaped.appendSlice(alloc, "&amp;"),
+            '\n' => try escaped.appendSlice(alloc, "<br>"),
+            else => try escaped.append(alloc, c),
+        }
+    }
+
+    return std.fmt.allocPrint(alloc,
+        \\<!DOCTYPE html>
+        \\<html><head><meta charset="utf-8"></head>
+        \\<body style="font-family:sans-serif;max-width:520px;margin:40px auto;color:#1a1a1a;">
+        \\  <img src="https://eventease-production-5c24.up.railway.app/logo.png"
+        \\       alt="EventEase" style="height:36px;margin-bottom:32px;">
+        \\  <div style="font-size:15px;line-height:1.7;">{s}</div>
+        \\  <hr style="margin:32px 0;border:none;border-top:1px solid #eee;">
+        \\  <p style="font-size:12px;color:#999;">
+        \\    EventEase &mdash; Enostavno usklajevanje terminov
+        \\  </p>
+        \\</body></html>
+    , .{escaped.items});
+}
 //Scammani iz strani railwaya tole bomo mi naredl kr prek httpja
 
 // fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const u8, subject: []const u8, body: []const u8) !void {
@@ -94,17 +122,67 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subject: []co
         return error.NoApiKey;
     });
 
+    // Build HTML body
+    var html_buf = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
+    defer html_buf.deinit(alloc);
+    for (body) |c| {
+        switch (c) {
+            '<' => try html_buf.appendSlice(alloc, "&lt;"),
+            '>' => try html_buf.appendSlice(alloc, "&gt;"),
+            '&' => try html_buf.appendSlice(alloc, "&amp;"),
+            '\n' => try html_buf.appendSlice(alloc, "<br>"),
+            else => try html_buf.append(alloc, c),
+        }
+    }
+    const html = try std.fmt.allocPrint(alloc,
+        \\<!DOCTYPE html>
+        \\<html><head><meta charset="utf-8"></head>
+        \\<body style="font-family:sans-serif;max-width:520px;margin:40px auto;color:#1a1a1a;">
+        \\  <img src="https://eventease-production-5c24.up.railway.app/EventEaseIkoncaEmail.png"
+        \\       alt="EventEase" width="200" style="margin-bottom:32px;">
+        \\  <div style="font-size:15px;line-height:1.7;">{s}</div>
+        \\  <hr style="margin:32px 0;border:none;border-top:1px solid #eee;">
+        \\  <p style="font-size:12px;color:#999;">
+        \\    EventEase &mdash; Enostavno usklajevanje terminov
+        \\  </p>
+        \\</body></html>
+    , .{html_buf.items});
+    defer alloc.free(html);
+
+    // JSON-escape the html
+    var json_escaped = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
+    defer json_escaped.deinit(alloc);
+    for (html) |c| {
+        switch (c) {
+            '\\' => try json_escaped.appendSlice(alloc, "\\\\"),
+            '"' => try json_escaped.appendSlice(alloc, "\\\""),
+            '\n' => try json_escaped.appendSlice(alloc, "\\n"),
+            '\r' => try json_escaped.appendSlice(alloc, "\\r"),
+            else => try json_escaped.append(alloc, c),
+        }
+    }
+
     const payload = try std.fmt.allocPrint(alloc,
-        \\{{"from":"EventEase <onboarding@resend.dev>","to":["{s}"],"subject":"{s}","text":"{s}"}}
-    , .{ to, subject, body });
+        \\{{"from":"EventEase <onboarding@resend.dev>","to":["{s}"],"subject":"{s}","html":"{s}"}}
+    , .{ to, subject, json_escaped.items });
     defer alloc.free(payload);
+
+    // Write payload to temp file to avoid shell quoting issues
+    const payload_file = "/tmp/resend_payload.json";
+    const write_cmd = try std.fmt.allocPrint(alloc, "cat > {s} << 'ENDJSON'\n{s}\nENDJSON", .{ payload_file, payload });
+    defer alloc.free(write_cmd);
+    const write_result = try std.process.run(alloc, io, .{
+        .argv = &[_][]const u8{ "sh", "-c", write_cmd },
+    });
+    alloc.free(write_result.stdout);
+    alloc.free(write_result.stderr);
 
     const cmd = try std.fmt.allocPrint(alloc,
         \\curl -s -w "%{{http_code}}" -o /tmp/resend_out.txt -X POST https://api.resend.com/emails \
         \\  -H "Authorization: Bearer {s}" \
         \\  -H "Content-Type: application/json" \
-        \\  -d '{s}'
-    , .{ api_key, payload });
+        \\  -d @{s}
+    , .{ api_key, payload_file });
     defer alloc.free(cmd);
 
     const result = try std.process.run(alloc, io, .{
@@ -115,7 +193,6 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subject: []co
 
     const status = std.mem.trim(u8, result.stdout, " \n\r");
     if (!std.mem.startsWith(u8, status, "2")) {
-        // Read and log the response body
         const cat_result = try std.process.run(alloc, io, .{
             .argv = &[_][]const u8{ "sh", "-c", "cat /tmp/resend_out.txt" },
         });
@@ -252,12 +329,16 @@ fn sendVoteNotification(alloc: std.mem.Allocator, io: std.Io, organizer_email: [
     const subject = try std.fmt.allocPrint(alloc, "New vote in poll: {s}", .{poll_title});
     defer alloc.free(subject);
     const body = try std.fmt.allocPrint(alloc,
-        \\A new vote has been submitted for your poll "{s}".
+        \\Novo glasovanje za "{s}"
         \\
-        \\Participant: {s}
+        \\{s} je oddal/a svoj glas za vaš dogodek.
         \\
-        \\Log in to see the updated results.
+        \\Ko vsi glasujejo, izberite termin in udeleženci bodo samodejno obveščeni.
+        \\
+        \\Lep pozdrav,
+        \\Ekipa EventEase
     , .{ poll_title, participant_name });
+
     defer alloc.free(body);
     try sendEmail(alloc, io, organizer_email, subject, body);
 }
@@ -277,14 +358,17 @@ fn sendFinalizationEmail(alloc: std.mem.Allocator, io: std.Io, organizer_email: 
     defer alloc.free(participants_str);
 
     const body = try std.fmt.allocPrint(alloc,
-        \\Your poll "{s}" has been finalized.
+        \\Glasovanje za "{s}" je zaključeno!
         \\
-        \\Final chosen time slot: {s} - {s}
+        \\Izbrani termin: {s} - {s}
         \\
-        \\Participants who voted:
+        \\Udeleženci:
         \\{s}
         \\
-        \\You can now view the results.
+        \\Vsi udeleženci so prejeli obvestilo z izbranim terminom.
+        \\
+        \\Lep pozdrav,
+        \\Ekipa EventEase
     , .{ poll_title, final_slot_start, final_slot_end, participants_str });
     defer alloc.free(body);
     try sendEmail(alloc, io, organizer_email, subject, body);
@@ -303,14 +387,16 @@ fn sendParticipantFinalizationEmail(
     defer alloc.free(subject);
 
     const body = try std.fmt.allocPrint(alloc,
-        \\Hello {s},
+        \\Pozdravljeni {s},
         \\
-        \\The poll "{s}" has been finalized.
-        \\The chosen time slot is: {s} - {s}
+        \\termin za "{s}" je potrjen.
         \\
-        \\An .ics calendar file is attached — open it to add this event to your calendar.
+        \\Izbrani termin: {s} - {s}
         \\
-        \\Thank you for participating.
+        \\V prilogi najdete datoteko .ics za uvoz v vaš koledar.
+        \\
+        \\Vidimo se!
+        \\Ekipa EventEase
     , .{ participant_name, poll_title, final_slot_start, final_slot_end });
     defer alloc.free(body);
 
@@ -701,16 +787,18 @@ pub fn shareEmail(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         // Removed explicit arena free defers
 
         const email_body = try std.fmt.allocPrint(res.arena,
-            \\Živijo!
+            \\Pozdravljeni!
             \\
             \\Vabljeni ste k glasovanju za termin dogodka "{s}".
             \\
-            \\Kliknite na spodnjo povezavo, da oddate svoj glas:
+            \\Glasujte tukaj:
             \\{s}
             \\
-            \\Hvala!
+            \\Glasovanje je hitro in enostavno.
+            \\
+            \\Lep pozdrav,
+            \\Ekipa EventEase
         , .{ input.title, input.share_link });
-        // Removed explicit arena free defers
 
         sendEmail(res.arena, app.io, recipient, subject, email_body) catch |err| {
             std.log.err("shareEmail: failed to send to {s}: {}", .{ recipient, err });

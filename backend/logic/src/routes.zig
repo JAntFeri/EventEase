@@ -35,6 +35,12 @@ fn jsonParse(comptime T: type, arena: std.mem.Allocator, body: []const u8) !T {
 // Email helpers
 // ----------------------------------------------------------------------------
 
+fn emailsEnabled() bool {
+    const val = std.c.getenv("DISABLE_EMAILS") orelse return true;
+    const slice = std.mem.span(val);
+    return slice.len == 0 or std.mem.eql(u8, slice, "0") or std.mem.eql(u8, slice, "false");
+}
+
 fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const u8, subject: []const u8, body: []const u8) !void {
     const content = try std.fmt.allocPrint(alloc,
         \\From: poll@yourserver.com
@@ -601,8 +607,6 @@ fn buildIcsContent(
     , .{ uid_hex, start_ics, end_ics, poll_title });
 }
 
-
-
 pub fn shareEmail(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const body = req.body() orelse {
         res.status = 400;
@@ -823,9 +827,11 @@ pub fn submitVote(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         break :blk .{ oe, pt };
     };
 
-    sendVoteNotification(res.arena, app.io, app.rng, organizer_email, poll_title, input.participant_name) catch |err| {
-        std.log.err("Failed to send vote notification: {}", .{err});
-    };
+    if (emailsEnabled()) {
+        sendVoteNotification(res.arena, app.io, app.rng, organizer_email, poll_title, input.participant_name) catch |err| {
+            std.log.err("Failed to send vote notification: {}", .{err});
+        };
+    }
 
     res.status = 201;
     try res.json(.{ .success = true }, .{});
@@ -982,15 +988,19 @@ pub fn finalizePoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
     }
     participants_result.deinit();
 
-    sendFinalizationEmail(res.arena, app.io, app.rng, organizer_email, poll_title, final_start, final_end, participant_names.items) catch |err| {
-        std.log.err("Failed to send finalization email to organizer: {}", .{err});
-    };
+    if (emailsEnabled()) {
+        sendFinalizationEmail(res.arena, app.io, app.rng, organizer_email, poll_title, final_start, final_end, participant_names.items) catch |err| {
+            std.log.err("Failed to send finalization email to organizer: {}", .{err});
+        };
+    }
 
     for (participant_emails.items, participant_names.items) |email, name| {
         if (email.len == 0) continue; // add this line
-        sendParticipantFinalizationEmail(res.arena, app.io, app.rng, email, name, poll_title, final_start, final_end) catch |err| {
-            std.log.err("Failed to send finalization email to {s}: {}", .{ name, err });
-        };
+        if (emailsEnabled()) {
+            sendParticipantFinalizationEmail(res.arena, app.io, app.rng, email, name, poll_title, final_start, final_end) catch |err| {
+                std.log.err("Failed to send finalization email to {s}: {}", .{ name, err });
+            };
+        }
     }
 
     try res.json(.{ .success = true }, .{});

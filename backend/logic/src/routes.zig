@@ -619,29 +619,30 @@ pub fn shareEmail(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
         recipients: []const []const u8,
     }, res.arena, body);
 
-    for (input.recipients) |recipient| {
-        if (recipient.len == 0) continue;
+    if (emailsEnabled()) {
+        for (input.recipients) |recipient| {
+            if (recipient.len == 0) continue;
 
-        const subject = try std.fmt.allocPrint(res.arena, "Vabilo: {s}", .{input.title});
-        // Removed explicit arena free defers
+            const subject = try std.fmt.allocPrint(res.arena, "Vabilo: {s}", .{input.title});
+            // Removed explicit arena free defers
 
-        const email_body = try std.fmt.allocPrint(res.arena,
-            \\Živijo!
-            \\
-            \\Vabljeni ste k glasovanju za termin dogodka "{s}".
-            \\
-            \\Kliknite na spodnjo povezavo, da oddate svoj glas:
-            \\{s}
-            \\
-            \\Hvala!
-        , .{ input.title, input.share_link });
-        // Removed explicit arena free defers
+            const email_body = try std.fmt.allocPrint(res.arena,
+                \\Živijo!
+                \\
+                \\Vabljeni ste k glasovanju za termin dogodka "{s}".
+                \\
+                \\Kliknite na spodnjo povezavo, da oddate svoj glas:
+                \\{s}
+                \\
+                \\Hvala!
+            , .{ input.title, input.share_link });
+            // Removed explicit arena free defers
 
-        sendEmail(res.arena, app.io, app.rng, recipient, subject, email_body) catch |err| {
-            std.log.err("shareEmail: failed to send to {s}: {}", .{ recipient, err });
-        };
+            sendEmail(res.arena, app.io, app.rng, recipient, subject, email_body) catch |err| {
+                std.log.err("shareEmail: failed to send to {s}: {}", .{ recipient, err });
+            };
+        }
     }
-
     try res.json(.{ .success = true }, .{});
 }
 pub fn acceptSuggestion(app: *App, req: *httpz.Request, res: *httpz.Response) !void {

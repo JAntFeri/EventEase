@@ -11,7 +11,7 @@ export default function CalendarPicker({
   onSuggestionSelect,
 }) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [activeDateStr, setActiveDateStr] = useState(null);
+  const [activeSlotKey, setActiveSlotKey] = useState(null);
   const [lastSelectedTime, setLastSelectedTime] = useState("12:00");
 
   const year = currentDate.getFullYear();
@@ -35,6 +35,19 @@ export default function CalendarPicker({
       return item.start_time.includes("T")
         ? item.start_time.split("T")[0]
         : item.start_time.split(" ")[0];
+    }
+    return "";
+  };
+
+  const getSlotKey = (item) => {
+    if (!item) return "";
+    if (item.start_time) {
+      return item.start_time.includes("T")
+        ? item.start_time
+        : item.start_time.replace(" ", "T");
+    }
+    if (item.date) {
+      return item.time ? `${item.date}T${item.time}:00` : item.date;
     }
     return "";
   };
@@ -92,31 +105,36 @@ export default function CalendarPicker({
       return;
     }
 
-    const isAlreadySelected = selectedDateStrings.includes(dateStr);
+    const slotKey = `${dateStr}T${lastSelectedTime}:00`;
+    const selectedIndex = selectedDates.findIndex((d) => getSlotKey(d) === slotKey);
 
-    if (isAlreadySelected) {
-      const updatedDates = selectedDates.filter(
-        (d) => getDateStr(d) !== dateStr,
-      );
+    if (selectedIndex !== -1) {
+      const updatedDates = selectedDates.filter((_, index) => index !== selectedIndex);
       if (onChange) onChange(updatedDates);
-      if (activeDateStr === dateStr) setActiveDateStr(null);
+      if (activeSlotKey === slotKey) setActiveSlotKey(null);
     } else {
       const newSlot = formatBackendSlot(dateStr, lastSelectedTime);
       const updatedDates = [...selectedDates, newSlot];
       if (onChange) onChange(updatedDates);
-      setActiveDateStr(dateStr);
+      setActiveSlotKey(getSlotKey(newSlot));
     }
   };
 
-  const handleTimeChange = (dateStr, newTime) => {
+  const handleTimeChange = (slotKey, newTime) => {
     setLastSelectedTime(newTime);
-    const updatedDates = selectedDates.map((d) => {
-      if (getDateStr(d) === dateStr) {
-        return formatBackendSlot(dateStr, newTime);
-      }
-      return d;
-    });
+    const activeIndex = selectedDates.findIndex((d) => getSlotKey(d) === slotKey);
+    if (activeIndex === -1) return;
+
+    const currentDateStr = getDateStr(selectedDates[activeIndex]);
+    const nextSlot = formatBackendSlot(currentDateStr, newTime);
+    const nextSlotKey = getSlotKey(nextSlot);
+    const updatedDates = selectedDates.filter(
+      (d, index) => index === activeIndex || getSlotKey(d) !== nextSlotKey,
+    );
+    updatedDates[activeIndex] = nextSlot;
+
     if (onChange) onChange(updatedDates);
+    setActiveSlotKey(nextSlotKey);
   };
 
   const days = [];
@@ -160,9 +178,7 @@ export default function CalendarPicker({
     });
   }
 
-  const activeSelection = selectedDates.find(
-    (d) => getDateStr(d) === activeDateStr,
-  );
+  const activeSelection = selectedDates.find((d) => getSlotKey(d) === activeSlotKey);
   const activeTimeValue = activeSelection
     ? getTimeStr(activeSelection)
     : lastSelectedTime;
@@ -200,9 +216,10 @@ export default function CalendarPicker({
       {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1 text-center">
         {days.map((item) => {
-          const matchedItem = selectedDates.find(
-            (d) => getDateStr(d) === item.key,
-          );
+          const matchedItem =
+            activeSelection && getDateStr(activeSelection) === item.key
+              ? activeSelection
+              : selectedDates.find((d) => getDateStr(d) === item.key);
           const displayTime = matchedItem ? getTimeStr(matchedItem) : "";
 
           return item.type === "blank" ? (
@@ -247,8 +264,8 @@ export default function CalendarPicker({
               Izbrana ura za
             </p>
             <p className="text-xs font-semibold text-[var(--color-text)]">
-              {activeDateStr.split("-")[2]}.{" "}
-              {monthNames[parseInt(activeDateStr.split("-")[1]) - 1]}
+              {getDateStr(activeSelection).split("-")[2]}.{" "}
+              {monthNames[parseInt(getDateStr(activeSelection).split("-")[1]) - 1]}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -256,12 +273,12 @@ export default function CalendarPicker({
               type="time"
               className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1 text-sm font-medium text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-2)] focus:border-transparent transition"
               value={activeTimeValue}
-              onChange={(e) => handleTimeChange(activeDateStr, e.target.value)}
+              onChange={(e) => handleTimeChange(activeSlotKey, e.target.value)}
             />
             <button
               type="button"
               className="text-xs bg-[var(--color-primary)] text-[var(--color-on-primary)] px-2.5 py-1.5 rounded-lg font-medium hover:bg-[var(--color-accent-3)] transition"
-              onClick={() => setActiveDateStr(null)}
+              onClick={() => setActiveSlotKey(null)}
             >
               Potrdi
             </button>

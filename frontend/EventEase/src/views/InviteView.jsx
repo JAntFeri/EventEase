@@ -5,6 +5,7 @@ import { isValidVoteStatus } from "../utils/eventHelpers.js";
 
 export default function InviteView({ eventData }) {
   const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState(""); // add this
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [dateVotes, setDateVotes] = useState({});
   const [claimedTasks, setClaimedTasks] = useState([]);
@@ -47,7 +48,10 @@ export default function InviteView({ eventData }) {
 
   const handleSubmitSuggestion = async () => {
     if (!guestName.trim()) {
-      setSuggestNotice({ type: "error", message: "Najprej vpišite svoje ime v obrazec." });
+      setSuggestNotice({
+        type: "error",
+        message: "Najprej vpišite svoje ime v obrazec.",
+      });
       return;
     }
     if (suggestionDates.length === 0) {
@@ -55,28 +59,39 @@ export default function InviteView({ eventData }) {
       return;
     }
     setSuggestNotice(null);
-    const cleanedDates = suggestionDates.map((d) => {
-      if (!d) return null;
-      if (typeof d === "string") return d;
-      if (d instanceof Date) return d.toISOString().split(".")[0];
-      if (d.start_time) return d.start_time;
-      if (d.date) return `${d.date}T12:00:00`;
-      return null;
-    }).filter(Boolean);
+    const cleanedDates = suggestionDates
+      .map((d) => {
+        if (!d) return null;
+        if (typeof d === "string") return d;
+        if (d instanceof Date) return d.toISOString().split(".")[0];
+        if (d.start_time) return d.start_time;
+        if (d.date) return `${d.date}T12:00:00`;
+        return null;
+      })
+      .filter(Boolean);
 
     setIsSuggesting(true);
     try {
       const response = await fetch(`/api/polls/share/${share_token}/suggest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ suggested_by: guestName.trim(), dates: cleanedDates }),
+        body: JSON.stringify({
+          suggested_by: guestName.trim(),
+          dates: cleanedDates,
+        }),
       });
       if (response.ok) {
         setShowSuggestModal(false);
         setSuggestionDates([]);
-        setNotice({ type: "success", message: "Predlogi uspešno poslani organizatorju." });
+        setNotice({
+          type: "success",
+          message: "Predlogi uspešno poslani organizatorju.",
+        });
       } else {
-        setSuggestNotice({ type: "error", message: "Napaka pri pošiljanju predlogov." });
+        setSuggestNotice({
+          type: "error",
+          message: "Napaka pri pošiljanju predlogov.",
+        });
       }
     } catch {
       setSuggestNotice({ type: "error", message: "Omrežna napaka." });
@@ -114,12 +129,17 @@ export default function InviteView({ eventData }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           participant_name: guestName.trim(),
+          participant_email: guestEmail.trim(),
           date_votes: formattedVotes,
           claimed_tasks: claimedTasks,
         }),
       });
       if (response.ok) setIsSubmitted(true);
-      else setNotice({ type: "error", message: "Napaka pri oddaji glasu na strežniku." });
+      else
+        setNotice({
+          type: "error",
+          message: "Napaka pri oddaji glasu na strežniku.",
+        });
     } catch {
       setNotice({ type: "error", message: "Omrežna napaka pri oddaji glasu." });
     }
@@ -130,17 +150,20 @@ export default function InviteView({ eventData }) {
       setResultsError("");
       setResultsLoading(true);
       const response = await fetch(`/api/polls/share/${share_token}`);
-      if (!response.ok) throw new Error("Rezultatov ni mogoče pridobiti. Poskusite znova.");
+      if (!response.ok)
+        throw new Error("Rezultatov ni mogoče pridobiti. Poskusite znova.");
       const data = await response.json();
-      const formattedSlots = (data.time_slots || []).map((slot) => {
-        if (!slot.start_time) return null;
-        return {
-          id: slot.id,
-          date: slot.start_time.replace("T", " ").split(" ")[0],
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-        };
-      }).filter(Boolean);
+      const formattedSlots = (data.time_slots || [])
+        .map((slot) => {
+          if (!slot.start_time) return null;
+          return {
+            id: slot.id,
+            date: slot.start_time.replace("T", " ").split(" ")[0],
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+          };
+        })
+        .filter(Boolean);
       setResultsData({
         suggestedDates: formattedSlots,
         votes: Array.isArray(data.votes) ? data.votes : [],
@@ -153,7 +176,10 @@ export default function InviteView({ eventData }) {
   };
 
   const handleToggleResults = async () => {
-    if (resultsVisible) { setResultsVisible(false); return; }
+    if (resultsVisible) {
+      setResultsVisible(false);
+      return;
+    }
     setResultsVisible(true);
     await fetchResults();
   };
@@ -164,11 +190,17 @@ export default function InviteView({ eventData }) {
   }, [notice]);
   useEffect(() => {
     if (suggestNotice && suggestNoticeRef.current)
-      suggestNoticeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      suggestNoticeRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
   }, [suggestNotice]);
   useEffect(() => {
     if (resultsError && resultsErrorRef.current)
-      resultsErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      resultsErrorRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
   }, [resultsError]);
 
   const plainDisplayDates = suggestedDates.map((slot) =>
@@ -188,16 +220,26 @@ export default function InviteView({ eventData }) {
             className="w-16 h-16 rounded-full flex items-center justify-center"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-              stroke="var(--color-on-primary)" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-on-primary)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
           {/* Thin accent ring */}
           <div
             className="absolute -inset-1.5 rounded-full"
-            style={{ border: "1.5px solid var(--color-accent-2)", opacity: 0.5 }}
+            style={{
+              border: "1.5px solid var(--color-accent-2)",
+              opacity: 0.5,
+            }}
           />
         </div>
 
@@ -207,25 +249,40 @@ export default function InviteView({ eventData }) {
         >
           Hvala, {guestName}!
         </h1>
-        <p className="text-sm leading-relaxed mb-8" style={{ color: "var(--color-text)", opacity: 0.55 }}>
+        <p
+          className="text-sm leading-relaxed mb-8"
+          style={{ color: "var(--color-text)", opacity: 0.55 }}
+        >
           Vaša udeležba pri{" "}
-          <span className="font-medium" style={{ color: "var(--color-primary)" }}>"{title}"</span>{" "}
-          je zabeležena. Ko organizator zaključi glasovanje, boste prejeli obvestilo.
+          <span
+            className="font-medium"
+            style={{ color: "var(--color-primary)" }}
+          >
+            "{title}"
+          </span>{" "}
+          je zabeležena. Ko organizator zaključi glasovanje, boste prejeli
+          obvestilo.
         </p>
 
         <div className="flex flex-col gap-2.5 w-full max-w-xs">
           <button
             onClick={handleToggleResults}
             className="w-full py-3 px-5 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-95"
-            style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
+            style={{
+              backgroundColor: "var(--color-primary)",
+              color: "var(--color-on-primary)",
+            }}
           >
-            {resultsVisible ? "Skrij rezultate" : "Prikaži rezultate glasovanja"}
+            {resultsVisible
+              ? "Skrij rezultate"
+              : "Prikaži rezultate glasovanja"}
           </button>
           <button
             onClick={() => setIsSubmitted(false)}
             className="w-full py-3 px-5 rounded-xl text-sm font-medium transition-all hover:opacity-70"
             style={{
-              border: "1.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent)",
+              border:
+                "1.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent)",
               color: "var(--color-primary)",
               backgroundColor: "transparent",
             }}
@@ -237,17 +294,27 @@ export default function InviteView({ eventData }) {
         {resultsVisible && (
           <div className="w-full mt-8">
             {resultsLoading && (
-              <p className="text-xs" style={{ color: "var(--color-text)", opacity: 0.45 }}>
+              <p
+                className="text-xs"
+                style={{ color: "var(--color-text)", opacity: 0.45 }}
+              >
                 Nalagam rezultate...
               </p>
             )}
             {!resultsLoading && resultsError && (
-              <p ref={resultsErrorRef} className="text-xs" style={{ color: "#ef4444" }}>
+              <p
+                ref={resultsErrorRef}
+                className="text-xs"
+                style={{ color: "#ef4444" }}
+              >
                 {resultsError}
               </p>
             )}
             {!resultsLoading && !resultsError && (
-              <VoteResults suggestedDates={resultsData.suggestedDates} votes={resultsData.votes} />
+              <VoteResults
+                suggestedDates={resultsData.suggestedDates}
+                votes={resultsData.votes}
+              />
             )}
           </div>
         )}
@@ -257,25 +324,37 @@ export default function InviteView({ eventData }) {
 
   // ── MAIN FORM ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen py-14 md:py-20 px-4" style={{ backgroundColor: "var(--color-bg)" }}>
+    <div
+      className="min-h-screen py-14 md:py-20 px-4"
+      style={{ backgroundColor: "var(--color-bg)" }}
+    >
       <div className="max-w-lg mx-auto">
-
         {/* Header */}
         <div className="mb-10">
           {/* Organizer label — plain, no coloured pill */}
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "var(--color-primary)", opacity: 0.6 }}>
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-4"
+            style={{ color: "var(--color-primary)", opacity: 0.6 }}
+          >
             {organizerName || "Organizator"} vas vabi
           </p>
 
           <h1
             className="text-4xl md:text-5xl leading-tight mb-3"
-            style={{ color: "var(--color-text)", fontFamily: "'Georgia', serif", fontWeight: 400 }}
+            style={{
+              color: "var(--color-text)",
+              fontFamily: "'Georgia', serif",
+              fontWeight: 400,
+            }}
           >
             {title}
           </h1>
 
           {description && (
-            <p className="text-sm leading-relaxed mt-1" style={{ color: "var(--color-text)", opacity: 0.5 }}>
+            <p
+              className="text-sm leading-relaxed mt-1"
+              style={{ color: "var(--color-text)", opacity: 0.5 }}
+            >
               {description}
             </p>
           )}
@@ -294,10 +373,16 @@ export default function InviteView({ eventData }) {
             className="mb-6 rounded-xl px-4 py-3 text-sm"
             style={
               notice.type === "error"
-                ? { backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" }
+                ? {
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    color: "#b91c1c",
+                  }
                 : {
-                    backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, var(--color-bg))",
-                    border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--color-primary) 6%, var(--color-bg))",
+                    border:
+                      "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)",
                     color: "var(--color-primary)",
                   }
             }
@@ -307,7 +392,6 @@ export default function InviteView({ eventData }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-
           {/* Name */}
           <div className="space-y-2">
             <label
@@ -321,17 +405,55 @@ export default function InviteView({ eventData }) {
               className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all"
               style={{
                 backgroundColor: "transparent",
-                border: "1.5px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
+                border:
+                  "1.5px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
                 color: "var(--color-text)",
               }}
-              onFocus={(e) => (e.target.style.borderColor = "var(--color-primary)")}
-              onBlur={(e) => (e.target.style.borderColor = "color-mix(in srgb, var(--color-primary) 18%, transparent)")}
+              onFocus={(e) =>
+                (e.target.style.borderColor = "var(--color-primary)")
+              }
+              onBlur={(e) =>
+                (e.target.style.borderColor =
+                  "color-mix(in srgb, var(--color-primary) 18%, transparent)")
+              }
               placeholder="Vpiši svoje ime..."
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               required
             />
           </div>
+          <div className="space-y-2">
+            <label
+              className="block text-xs font-semibold uppercase tracking-widest"
+              style={{ color: "var(--color-text)", opacity: 0.45 }}
+            >
+              Tvoj e-poštni naslov{" "}
+              <span className="font-normal" style={{ opacity: 0.6 }}>
+                (izbirno)
+              </span>
+            </label>
+            <input
+              type="email"
+              className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all"
+              style={{
+                backgroundColor: "transparent",
+                border:
+                  "1.5px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
+                color: "var(--color-text)",
+              }}
+              onFocus={(e) =>
+                (e.target.style.borderColor = "var(--color-primary)")
+              }
+              onBlur={(e) =>
+                (e.target.style.borderColor =
+                  "color-mix(in srgb, var(--color-primary) 18%, transparent)")
+              }
+              placeholder="za obvestilo o izbranem terminu..."
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+            />
+          </div>
+          
 
           {/* Calendar */}
           <div className="space-y-2">
@@ -345,8 +467,10 @@ export default function InviteView({ eventData }) {
             <div
               className="rounded-xl p-4"
               style={{
-                border: "1.5px solid color-mix(in srgb, var(--color-primary) 12%, transparent)",
-                backgroundColor: "color-mix(in srgb, var(--color-primary) 2%, var(--color-bg))",
+                border:
+                  "1.5px solid color-mix(in srgb, var(--color-primary) 12%, transparent)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--color-primary) 2%, var(--color-bg))",
               }}
             >
               <CalendarPicker
@@ -367,7 +491,9 @@ export default function InviteView({ eventData }) {
                 style={{ color: "var(--color-text)", opacity: 0.45 }}
               >
                 Pomoč pri organizaciji{" "}
-                <span className="font-normal" style={{ opacity: 0.6 }}>(izbirno)</span>
+                <span className="font-normal" style={{ opacity: 0.6 }}>
+                  (izbirno)
+                </span>
               </label>
               <div className="space-y-2">
                 {tasks.map((task) => {
@@ -378,7 +504,7 @@ export default function InviteView({ eventData }) {
                       className="flex items-center justify-between px-4 py-3.5 rounded-xl transition-all"
                       style={{
                         border: isClaimed
-                          ? "1.5px solid var(--color-accent-2)"   /* accent only when active */
+                          ? "1.5px solid var(--color-accent-2)" /* accent only when active */
                           : "1.5px solid color-mix(in srgb, var(--color-primary) 14%, transparent)",
                         backgroundColor: isClaimed
                           ? "color-mix(in srgb, var(--color-primary) 5%, var(--color-bg))"
@@ -396,7 +522,13 @@ export default function InviteView({ eventData }) {
                         >
                           {task}
                         </p>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--color-primary)", opacity: 0.6 }}>
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{
+                            color: "var(--color-primary)",
+                            opacity: 0.6,
+                          }}
+                        >
                           {isClaimed ? `Prevzel/a: ${guestName}` : "Na voljo"}
                         </p>
                       </div>
@@ -406,10 +538,14 @@ export default function InviteView({ eventData }) {
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
                         style={
                           isClaimed
-                            ? { backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }
+                            ? {
+                                backgroundColor: "var(--color-primary)",
+                                color: "var(--color-on-primary)",
+                              }
                             : {
                                 backgroundColor: "transparent",
-                                border: "1.5px solid color-mix(in srgb, var(--color-primary) 30%, transparent)",
+                                border:
+                                  "1.5px solid color-mix(in srgb, var(--color-primary) 30%, transparent)",
                                 color: "var(--color-primary)",
                               }
                         }
@@ -428,14 +564,20 @@ export default function InviteView({ eventData }) {
             <button
               type="submit"
               className="w-full py-3.5 px-6 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-95"
-              style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
+              style={{
+                backgroundColor: "var(--color-primary)",
+                color: "var(--color-on-primary)",
+              }}
             >
               Potrdi udeležbo
             </button>
             {/* Secondary action — neutral, accent only as its border */}
             <button
               type="button"
-              onClick={() => { setSuggestNotice(null); setShowSuggestModal(true); }}
+              onClick={() => {
+                setSuggestNotice(null);
+                setShowSuggestModal(true);
+              }}
               className="w-full py-3.5 px-6 rounded-xl text-sm font-medium transition-all hover:opacity-80"
               style={{
                 backgroundColor: "transparent",
@@ -456,20 +598,30 @@ export default function InviteView({ eventData }) {
             className="w-full max-w-sm rounded-2xl p-6 shadow-xl"
             style={{
               backgroundColor: "var(--color-bg)",
-              border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
             }}
           >
-            <h2 className="text-base font-semibold mb-1.5" style={{ color: "var(--color-text)" }}>
+            <h2
+              className="text-base font-semibold mb-1.5"
+              style={{ color: "var(--color-text)" }}
+            >
               Izberite termin
             </h2>
-            <p className="text-sm" style={{ color: "var(--color-text)", opacity: 0.55 }}>
+            <p
+              className="text-sm"
+              style={{ color: "var(--color-text)", opacity: 0.55 }}
+            >
               Pred potrditvijo udeležbe izberite vsaj en datum.
             </p>
             <div className="mt-5 flex justify-end">
               <button
                 onClick={() => setShowNoDatePopup(false)}
                 className="py-2.5 px-5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-on-primary)",
+                }}
               >
                 V redu
               </button>
@@ -485,13 +637,20 @@ export default function InviteView({ eventData }) {
             className="w-full max-w-sm rounded-2xl p-6 shadow-xl"
             style={{
               backgroundColor: "var(--color-bg)",
-              border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
             }}
           >
-            <h2 className="text-base font-semibold mb-1" style={{ color: "var(--color-text)" }}>
+            <h2
+              className="text-base font-semibold mb-1"
+              style={{ color: "var(--color-text)" }}
+            >
               Predlagaj datum
             </h2>
-            <p className="text-xs mb-4" style={{ color: "var(--color-text)", opacity: 0.5 }}>
+            <p
+              className="text-xs mb-4"
+              style={{ color: "var(--color-text)", opacity: 0.5 }}
+            >
               Izberite datume ki bi vam ustrezali. Organizator jih bo pregledal.
             </p>
             <CalendarPicker
@@ -505,10 +664,16 @@ export default function InviteView({ eventData }) {
                 className="mt-3 rounded-xl px-3 py-2 text-xs"
                 style={
                   suggestNotice.type === "error"
-                    ? { backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" }
+                    ? {
+                        backgroundColor: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        color: "#b91c1c",
+                      }
                     : {
-                        backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, var(--color-bg))",
-                        border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--color-primary) 6%, var(--color-bg))",
+                        border:
+                          "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)",
                         color: "var(--color-primary)",
                       }
                 }
@@ -522,7 +687,8 @@ export default function InviteView({ eventData }) {
                 onClick={() => setShowSuggestModal(false)}
                 className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border transition-all hover:opacity-70"
                 style={{
-                  borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                  borderColor:
+                    "color-mix(in srgb, var(--color-primary) 20%, transparent)",
                   color: "var(--color-text)",
                   backgroundColor: "transparent",
                 }}
@@ -534,7 +700,10 @@ export default function InviteView({ eventData }) {
                 onClick={handleSubmitSuggestion}
                 disabled={isSuggesting}
                 className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-on-primary)",
+                }}
               >
                 {isSuggesting ? "Pošiljam..." : "Pošlji predlog"}
               </button>

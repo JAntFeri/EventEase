@@ -987,6 +987,7 @@ pub fn finalizePoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
     };
 
     for (participant_emails.items, participant_names.items) |email, name| {
+        if (email.len == 0) continue; // add this line
         sendParticipantFinalizationEmail(res.arena, app.io, app.rng, email, name, poll_title, final_start, final_end) catch |err| {
             std.log.err("Failed to send finalization email to {s}: {}", .{ name, err });
         };

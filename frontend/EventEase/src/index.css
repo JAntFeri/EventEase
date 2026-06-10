@@ -52,3 +52,14 @@ textarea {
   animation: landingFloat 10.5s ease-in-out infinite;
   animation-delay: 1.2s;
 }
+
+/* Add these to the bottom of your theme.css */
+
+/* Logo switching based on color scheme */
+.theme-logo-light { display: block; }
+.theme-logo-dark  { display: none;  }
+
+@media (prefers-color-scheme: dark) {
+  .theme-logo-light { display: none;  }
+  .theme-logo-dark  { display: block; }
+}

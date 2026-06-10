@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import VoteResults from "../components/VoteResults";
 import CalendarPicker from "../components/CalendarPicker";
+import FinalizedView from "./FinalizedView";
 
 export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams();
@@ -12,6 +13,8 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   const [fetchedData, setFetchedData] = useState(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [isFinalized, setIsFinalized] = useState(false);
+  const [finalSlot, setFinalSlot] = useState(null);
 
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +31,16 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
         const response = await fetch(`/api/polls/admin/${adminToken}`);
         if (!response.ok) throw new Error("Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.");
         const data = await response.json();
+
+        // Detect already-finalized poll
+        if (data.is_finalized && data.final_slot_id) {
+          const matched = (data.time_slots || []).find((s) => s.id === data.final_slot_id);
+          setFinalSlot(matched || null);
+          setIsFinalized(true);
+          setFetchedData({ title: data.title, description: data.description });
+          return;
+        }
+
         setFetchedData({
           title: data.title,
           description: data.description,
@@ -115,8 +128,10 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
         body: JSON.stringify({ final_slot_id: selectedSlotId }),
       });
       if (response.ok) {
-        setNotice({ type: "success", message: "Dogodek uspešno zaključen! Udeleženci bodo prejeli obvestila s koledarsko datoteko." });
-        setTimeout(() => navigate("/"), 1200);
+        // Find the chosen slot and show finalized view immediately
+        const chosen = (fetchedData?.suggestedDates || []).find((s) => s.id === selectedSlotId);
+        setFinalSlot(chosen || null);
+        setIsFinalized(true);
       } else {
         setNotice({ type: "error", message: "Napaka na strežniku pri zaključevanju glasovanja." });
       }
@@ -129,7 +144,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
 
   let error = apiError;
   if (!propEventData && !basicToken) error = "Napačna skrbniška povezava. Manjka identifikator povabila.";
-  const loading = !propEventData && !error && (apiLoading || !fetchedData);
+  const loading = !propEventData && !error && (apiLoading || (!fetchedData && !isFinalized));
 
   if (loading) {
     return (
@@ -145,6 +160,19 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
         <h2 className="text-xl font-medium mb-2" style={{ color: "var(--color-text)" }}>Napaka pri dostopu</h2>
         <p className="text-sm max-w-sm" style={{ color: "var(--color-text)", opacity: 0.55 }}>{error}</p>
       </div>
+    );
+  }
+
+  // Show finalized state for admin
+  if (isFinalized) {
+    const data = propEventData || fetchedData;
+    return (
+      <FinalizedView
+        title={data?.title}
+        description={data?.description}
+        finalSlot={finalSlot}
+        isAdmin={true}
+      />
     );
   }
 
@@ -172,7 +200,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             </button>
           )}
 
-          {/* Admin label — no coloured badge, just quiet uppercase text */}
           <p
             className="text-xs font-semibold uppercase tracking-widest mb-4"
             style={{ color: "var(--color-primary)", opacity: 0.5 }}
@@ -196,7 +223,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             </p>
           )}
 
-          {/* Single small accent stroke */}
           <div className="mt-6 h-px w-12" style={{ backgroundColor: "var(--color-accent-2)" }} />
         </div>
 
@@ -219,7 +245,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           </div>
         )}
 
-        {/* Suggestions section — neutral background, accent only as its border */}
+        {/* Suggestions section */}
         {pendingSuggestions.length > 0 && (
           <div
             className="mb-8 rounded-xl p-5"
@@ -229,7 +255,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             }}
           >
             <div className="flex items-center gap-2 mb-1">
-              {/* Small accent dot */}
               <div
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: "var(--color-accent-2)" }}
@@ -239,10 +264,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
                 style={{ color: "var(--color-text)", opacity: 0.6 }}
               >
                 Predlogi udeležencev
-                <span
-                  className="ml-1.5 font-bold"
-                  style={{ color: "var(--color-primary)" }}
-                >
+                <span className="ml-1.5 font-bold" style={{ color: "var(--color-primary)" }}>
                   ({pendingSuggestions.length})
                 </span>
               </h2>
@@ -347,10 +369,9 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
                       : "transparent",
                   }}
                 >
-                  {/* Custom radio — primary fill, accent as a hint only on selected */}
                   <div className="pt-4 pl-1 flex-shrink-0">
                     <div
-                      className="w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all"
+                      className="rounded-full flex items-center justify-center transition-all"
                       style={{
                         width: "18px",
                         height: "18px",
@@ -376,7 +397,6 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
             })}
           </div>
 
-          {/* Warning — quiet, no accent fill */}
           <div
             className="rounded-xl px-4 py-3.5 text-xs leading-relaxed"
             style={{

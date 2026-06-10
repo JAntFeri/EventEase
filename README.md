@@ -41,7 +41,7 @@ Iskanje skupnega termina za skupinski dogodek po navadi pomeni neskončne klepet
 
 | Ustvarjanje | Glasovanje | Zaključevanje|
 |:---:|:---:|:---:|
-| ![Ustvarjanje](docs/gifs/Demonstracija1.gif) | ![Glasovanje](docs/gifs/Demonstracija2) | ![Glasovanje](docs/gifs/Demonstracija3.gif) |
+| ![Ustvarjanje](docs/gifs/Demonstracija1.gif) | ![Glasovanje](docs/gifs/Demonstracija2.gif) | ![Glasovanje](docs/gifs/Demonstracija3.gif) |
 
 ---
 
@@ -53,7 +53,7 @@ Browser → nginx (:8080)
               └── /*      → React SPA (static)
 ```
 
-Vse teče v enem Docker kontejnerju — nginx posreduje API zahteve Zig procesu, statične datoteke pa strežé neposredno.
+Vse teče v enem Docker kontejnerju — nginx posreduje API zahteve Zig procesu, statične datoteke pa streže neposredno.
 
 ### Izsek: ustvarjanje ankete (Zig)
 
@@ -161,7 +161,7 @@ npm ci && npm run dev   # → http://localhost:5173, /api proxy → :3000
 
 ---
 
-## Kaj še manjka
+## Kaj še manjka / Nadaljnji razvoj
 
 - Omejevanje pogostosti pošiljanja e-pošte
 - Anonimen način glasovanja

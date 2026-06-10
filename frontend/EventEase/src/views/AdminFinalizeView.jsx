@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import VoteResults from "../components/VoteResults";
 import CalendarPicker from "../components/CalendarPicker";
 import FinalizedView from "./FinalizedView";
@@ -7,7 +7,6 @@ import FinalizedView from "./FinalizedView";
 export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const basicToken = searchParams.get("invite");
 
   const [fetchedData, setFetchedData] = useState(null);

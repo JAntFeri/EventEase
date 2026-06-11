@@ -171,3 +171,6 @@ npm ci && npm run dev   # → http://localhost:5173, /api proxy → :3000
 - Jure Antolič
 - Lenart Beršnak
 - Nikolaj Logar
+
+### Opombe:
+Zaradi tega ker nimamo registrirane domene, trenutno epoštna sporočila prihajajo samo na en naslov (za demonstracijo).

@@ -166,3 +166,8 @@ npm ci && npm run dev   # → http://localhost:5173, /api proxy → :3000
 - Omejevanje pogostosti pošiljanja e-pošte
 - Anonimen način glasovanja
 - Določanje trajanja termina (npr. od 7.7 do 13.7)
+
+## Avtorji:
+- Jure Antolič
+- Lenart Beršnak
+- Nikolaj Logar

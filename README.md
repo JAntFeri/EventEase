@@ -6,7 +6,7 @@
 
 **Usklajevanje terminov skupinskih dogodkov — brez registracije, brez kaosa.**
 
-[![Live](https://img.shields.io/badge/🌐_Deluje_tukaj-eventease.up.railway.app-4E598C)](https://eventease-production-5c24.up.railway.app)
+[![Live](https://img.shields.io/badge/🌐_Deluje_tukaj-eventeaseapp.up.railway.app-4E598C)](https://eventeaseapp.up.railway.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](frontend/EventEase/)
 [![Zig](https://img.shields.io/badge/Zig-0.16-F7A41D?logo=zig&logoColor=white)](backend/logic/)

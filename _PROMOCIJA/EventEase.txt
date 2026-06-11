@@ -1,0 +1,21 @@
+EventEase
+
+EventEase je hitra in intuitivna spletna aplikacija, ki brez registracije rešuje kaos usklajevanja skupinskih terminov z uporabo interaktivnih glasovalnih anket in avtomatskim izvozom koledarskih .ics dogodkov.
+Leto izdelave: 2026
+
+Jure Antolič
+Lenart Beršnak
+Nikolaj Logar
+
+
+Domača stran: https://eventeaseapp.up.railway.app/
+Vir podatkov: Vira podatkov  ni ker temelji na podatkih danih s strani uporabnikov
+
+Koda: https://github.com/JAntFeri/EventEase
+
+Kategorizacija: spletna aplikacija, celovita informacijska rešitev
+
+Oznake: ReactJS, Zig, PostgreSQL, Docker, Nginx, REST-API, TailwindCSS, Vite, AgilenRazvoj, GitHub, Mailpit
+
+EventEase je sodobna spletna rešitev, zasnovana z mislijo na odstranitev digitalnega šuma in neskončnih klepetalnih niti, ki spremljajo organizacijo skupinskih dogodkov, kot so sestanki, izleti ali praznovanja. Glavna prednost aplikacije je popolna svoboda brez registracije. Organizator preprosto ustvari anketo z naborom možnih datumov, sistem pa zanj in za udeležence generira unikatne, varne UUID žetone za dostop. Udeleženci nato z interaktivnim koledarjem oddajo svoje glasove (da / če je nujno / ne) ali pa predlagajo povsem nove termine, kar omogoča maksimalno prilagodljivost skupine.
+Arhitektura sistema je optimizirana za visoko odzivnost in nizko porabo virov. Prednji del poganja odziven uporabniški vmesnik v tehnologiji React 19 in Tailwind CSS, medtem ko za zanesljivo in bliskovito hitro procesiranje podatkov v ozadju skrbi zmogljiv backend, napisan v sistemskem jeziku Zig, povezan s PostgreSQL bazo podatkov. Celotna rešitev je zapakirana v Docker vsebnik, kjer Nginx učinkovito usmerja promet. Ko organizator v preglednem admin vmesniku izbere zmagovalni termin, sistem samodejno zaključi glasovanje in vsem udeležencem na vnesene e-naslove pošlje potrdilo z generirano .ics datoteko za takojšen uvoz v koledar.

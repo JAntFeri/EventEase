@@ -134,7 +134,7 @@ Po spremembi `npm run lint` ne javi napak, `npm run build` pa uspe. Delovanje os
 |-----|--------|---------------|--------------------------------|
 | To poročilo (analiza dokumentacije, standardov in QA) | Claude Code | Pregled kode in konfiguracije, zagon lint/testov, osnutek poročila | Ekipa pregleda vsako trditev. Lint, testi in build so bili dejansko zagnani (rezultati v 3.1). |
 | Popravek `LandingPage.jsx` | Claude Code | Preoblikovanje datoteke po standardih iz 2.3 | `npm run lint`, `npm run build`, ročni preizkus v brskalniku *(dopolni)* |
-| Testi, CI, ostala koda | *dopolni ekipa* | *dopolni ekipa* | *dopolni ekipa* |
+| Testi, CI, ostala koda | Umetna inteligenca uporabljena skozi celoten projekt | Preko spletnega vmesnika | / |
 
 ### 3.3 Glavne vrzeli in predlogi
 

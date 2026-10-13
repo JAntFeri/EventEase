@@ -1,46 +1,27 @@
-// LandingPage.jsx
-import { useState, useEffect } from 'react';
-import LandingView from '../views/LandingView';
-import CreateEventWizard from './CreateEventPage';
-import InviteView from '../views/InviteView';
+// src/pages/LandingPage.jsx
+// Home page: switches between the intro view and the event creation wizard.
+import { useState, useEffect } from "react";
+import LandingView from "../views/LandingView";
+import CreateEventWizard from "./CreateEventPage";
+
+const VIEW_LANDING = "landing";
+const VIEW_CREATE = "create-wizard";
+
+const PAGE_TITLES = {
+  [VIEW_LANDING]: "EventEase",
+  [VIEW_CREATE]: "Ustvari nov dogodek",
+};
 
 export default function LandingPage() {
-  const [view, setView] = useState('landing');
-  const [activeEvent, setActiveEvent] = useState(null);
+  const [view, setView] = useState(VIEW_LANDING);
 
   useEffect(() => {
-    switch (view) {
-      case 'landing':
-        document.title = 'EventEase';
-        break;
-      case 'create-wizard':
-        document.title = 'Ustvari nov dogodek';
-        break;
-      default:
-        document.title = 'EventEase';
-    }
-  }, [view, activeEvent]);
-  const handleEventCreation = (formData) => {
-    const processedTasks = formData.tasks
-      ? formData.tasks.split('\n').map(t => t.trim()).filter(t => t.length > 0)
-      : [];
-    const completeEventPayload = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: formData.title,
-      description: formData.description,
-      suggestedDates: formData.suggestedDates || [],
-      tasks: processedTasks,
-      organizerName: 'Organizator',
-      createdAt: new Date()
-    };
-    setActiveEvent(completeEventPayload);
-    setView('invite-view');
-  };
+    document.title = PAGE_TITLES[view] ?? "EventEase";
+  }, [view]);
 
   const navigateHome = (e) => {
     if (e) e.preventDefault();
-    setActiveEvent(null);
-    setView('landing');
+    setView(VIEW_LANDING);
   };
 
   return (
@@ -54,32 +35,30 @@ export default function LandingPage() {
           <img
             src="/EventEaseIkonca.svg"
             alt="EventEase"
-            className="theme-logo-light"
-            style={{ height: "28px", width: "28px" }}
+            className="theme-logo-light h-7 w-7"
           />
           <img
             src="/EventEaseIkoncaDark.svg"
             alt="EventEase"
-            className="theme-logo-dark"
-            style={{ height: "28px", width: "28px" }}
+            className="theme-logo-dark h-7 w-7"
           />
 
           <span className="text-xl font-semibold tracking-tight">
-            <span style={{ color: "var(--color-accent-3)" }}>Event</span>
-            <span style={{ color: "var(--color-primary)" }}>Ease</span>
+            <span className="text-[var(--color-accent-3)]">Event</span>
+            <span className="text-[var(--color-primary)]">Ease</span>
           </span>
         </a>
       </nav>
 
       <main className="flex-grow">
-        {view === 'landing' && <LandingView onStartCreating={() => setView('create-wizard')} />}
-        {view === 'create-wizard' && <CreateEventWizard onCancel={navigateHome} onCreate={handleEventCreation} />}
-        {view === 'invite-view' && activeEvent && <InviteView eventData={activeEvent} />}
+        {view === VIEW_LANDING && (
+          <LandingView onStartCreating={() => setView(VIEW_CREATE)} />
+        )}
+        {view === VIEW_CREATE && <CreateEventWizard onCancel={navigateHome} />}
       </main>
 
       <footer className="py-6 px-4 sm:px-8 border-t border-[var(--color-accent-2)]/20 flex flex-wrap-reverse items-center justify-between gap-4 text-xs text-[var(--color-text)]/60">
         <span>© 2026 EventEase</span>
-        
       </footer>
     </div>
   );

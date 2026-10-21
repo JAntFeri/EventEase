@@ -24,7 +24,33 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+
+      # Neuspešen test ali pokritost pod pragom (glej package.json) ustavi cevovod.
+      - name: Testi enot s pokritostjo
+        shell: bash
+        run: npm run test:coverage | tee test-output.txt
+
+      - name: Povzetek pokritosti
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Pokritost kode (frontend)"
+            echo '```'
+            sed -n '/start of coverage report/,/end of coverage report/p' test-output.txt | sed 's/^ℹ //'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Naloži poročilo o pokritosti
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: |
+            frontend/EventEase/coverage/lcov.info
+            frontend/EventEase/test-output.txt
+          if-no-files-found: warn
+
       - run: npm run build
 
   backend:
@@ -41,7 +67,7 @@ jobs:
           version: 0.16.0
 
       - run: zig build
-      - run: zig build test
+      - run: zig build test --summary all
 
   docker-smoke:
     name: Docker + API smoke

@@ -31,16 +31,16 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
-    const uuid_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/uuid.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-
-    const run_uuid_tests = b.addRunArtifact(uuid_tests);
-
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_uuid_tests.step);
+    const test_files = [_][]const u8{ "src/uuid.zig", "src/email_content.zig" };
+    for (test_files) |path| {
+        const unit_tests = b.addTest(.{
+            .root_module = b.createModule(.{
+                .root_source_file = b.path(path),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        test_step.dependOn(&b.addRunArtifact(unit_tests).step);
+    }
 }

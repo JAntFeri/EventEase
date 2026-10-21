@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
 import { buildSharePath } from "../utils/eventHelpers.js";
+import { createPoll, shareByEmail } from "../api/polls.js";
 
 export default function CreateEventWizard({ onCancel }) {
   const [formData, setFormData] = useState({
@@ -58,17 +59,11 @@ export default function CreateEventWizard({ onCancel }) {
     setEmailSuccess(false);
 
     try {
-      const response = await fetch("/api/polls/share-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          share_link: shareLink,
-          title: formData.title,
-          recipients: recipientEmails,
-        }),
+      await shareByEmail({
+        share_link: shareLink,
+        title: formData.title,
+        recipients: recipientEmails,
       });
-
-      if (!response.ok) throw new Error("Napaka na strežniku.");
 
       setEmailSuccess(true);
       setRecipientEmails([]);
@@ -131,21 +126,13 @@ export default function CreateEventWizard({ onCancel }) {
     });
 
     try {
-      const response = await fetch("/api/polls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          organizer_email: formData.organizer_email,
-          time_slots: timeSlots,
-          tasks: formData.tasks.split("\n").filter((t) => t.trim() !== ""),
-        }),
+      const data = await createPoll({
+        title: formData.title,
+        description: formData.description,
+        organizer_email: formData.organizer_email,
+        time_slots: timeSlots,
+        tasks: formData.tasks.split("\n").filter((t) => t.trim() !== ""),
       });
-
-      if (!response.ok) throw new Error("Napaka na strežniku.");
-
-      const data = await response.json();
 
       if (data.admin_token && data.share_token) {
         setAdminLink(

@@ -1,6 +1,7 @@
 const std = @import("std");
 const httpz = @import("httpz");
 const App = @import("main.zig").App;
+const email_content = @import("email_content.zig");
 
 // ----------------------------------------------------------------------------
 // UUID helpers (all string-based, no raw bytes)
@@ -41,34 +42,6 @@ fn emailsEnabled() bool {
     return slice.len == 0 or std.mem.eql(u8, slice, "0") or std.mem.eql(u8, slice, "false");
 }
 
-fn buildHtmlEmail(alloc: std.mem.Allocator, body_text: []const u8) ![]const u8 {
-    // escape the plain text for HTML
-    var escaped = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
-    defer escaped.deinit(alloc);
-    for (body_text) |c| {
-        switch (c) {
-            '<' => try escaped.appendSlice(alloc, "&lt;"),
-            '>' => try escaped.appendSlice(alloc, "&gt;"),
-            '&' => try escaped.appendSlice(alloc, "&amp;"),
-            '\n' => try escaped.appendSlice(alloc, "<br>"),
-            else => try escaped.append(alloc, c),
-        }
-    }
-
-    return std.fmt.allocPrint(alloc,
-        \\<!DOCTYPE html>
-        \\<html><head><meta charset="utf-8"></head>
-        \\<body style="font-family:sans-serif;max-width:520px;margin:40px auto;color:#1a1a1a;">
-        \\  <img src="https://eventease-production-5c24.up.railway.app/logo.png"
-        \\       alt="EventEase" style="height:36px;margin-bottom:32px;">
-        \\  <div style="font-size:15px;line-height:1.7;">{s}</div>
-        \\  <hr style="margin:32px 0;border:none;border-top:1px solid #eee;">
-        \\  <p style="font-size:12px;color:#999;">
-        \\    EventEase &mdash; Enostavno usklajevanje terminov
-        \\  </p>
-        \\</body></html>
-    , .{escaped.items});
-}
 //Scammani iz strani railwaya tole bomo mi naredl kr prek httpja
 
 // fn sendEmail(alloc: std.mem.Allocator, io: std.Io, rng: std.Random, to: []const u8, subject: []const u8, body: []const u8) !void {
@@ -122,49 +95,18 @@ fn sendEmail(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subject: []co
         return error.NoApiKey;
     });
 
-    // Build HTML body
-    var html_buf = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
-    defer html_buf.deinit(alloc);
-    for (body) |c| {
-        switch (c) {
-            '<' => try html_buf.appendSlice(alloc, "&lt;"),
-            '>' => try html_buf.appendSlice(alloc, "&gt;"),
-            '&' => try html_buf.appendSlice(alloc, "&amp;"),
-            '\n' => try html_buf.appendSlice(alloc, "<br>"),
-            else => try html_buf.append(alloc, c),
-        }
-    }
-    const html = try std.fmt.allocPrint(alloc,
-        \\<!DOCTYPE html>
-        \\<html><head><meta charset="utf-8"></head>
-        \\<body style="font-family:sans-serif;max-width:520px;margin:40px auto;color:#1a1a1a;">
-        \\  <img src="https://eventease-production-5c24.up.railway.app/EventEaseIkoncaEmail.png"
-        \\       alt="EventEase" width="200" style="margin-bottom:32px;">
-        \\  <div style="font-size:15px;line-height:1.7;">{s}</div>
-        \\  <hr style="margin:32px 0;border:none;border-top:1px solid #eee;">
-        \\  <p style="font-size:12px;color:#999;">
-        \\    EventEase &mdash; Enostavno usklajevanje terminov
-        \\  </p>
-        \\</body></html>
-    , .{html_buf.items});
+    const html = try email_content.buildHtmlEmail(alloc, body);
     defer alloc.free(html);
-
-    // JSON-escape the html
-    var json_escaped = std.ArrayListUnmanaged(u8){ .items = &.{}, .capacity = 0 };
-    defer json_escaped.deinit(alloc);
-    for (html) |c| {
-        switch (c) {
-            '\\' => try json_escaped.appendSlice(alloc, "\\\\"),
-            '"' => try json_escaped.appendSlice(alloc, "\\\""),
-            '\n' => try json_escaped.appendSlice(alloc, "\\n"),
-            '\r' => try json_escaped.appendSlice(alloc, "\\r"),
-            else => try json_escaped.append(alloc, c),
-        }
-    }
+    const html_json = try email_content.jsonEscape(alloc, html);
+    defer alloc.free(html_json);
+    const to_json = try email_content.jsonEscape(alloc, to);
+    defer alloc.free(to_json);
+    const subject_json = try email_content.jsonEscape(alloc, subject);
+    defer alloc.free(subject_json);
 
     const payload = try std.fmt.allocPrint(alloc,
         \\{{"from":"EventEase <onboarding@resend.dev>","to":["{s}"],"subject":"{s}","html":"{s}"}}
-    , .{ to, subject, json_escaped.items });
+    , .{ to_json, subject_json, html_json });
     defer alloc.free(payload);
 
     // Write payload to temp file to avoid shell quoting issues
@@ -292,6 +234,13 @@ fn sendEmailWithIcs(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subjec
     if (!emailsEnabled()) return;
     const api_key = std.mem.span(std.c.getenv("RESEND_API_KEY") orelse return error.NoApiKey);
 
+    const to_json = try email_content.jsonEscape(alloc, to);
+    defer alloc.free(to_json);
+    const subject_json = try email_content.jsonEscape(alloc, subject);
+    defer alloc.free(subject_json);
+    const body_json = try email_content.jsonEscape(alloc, body);
+    defer alloc.free(body_json);
+
     const payload = if (ics_content) |ics| blk: {
         const encoded_len = std.base64.standard.Encoder.calcSize(ics.len);
         const encoded = try alloc.alloc(u8, encoded_len);
@@ -299,22 +248,27 @@ fn sendEmailWithIcs(alloc: std.mem.Allocator, io: std.Io, to: []const u8, subjec
         _ = std.base64.standard.Encoder.encode(encoded, ics);
         break :blk try std.fmt.allocPrint(alloc,
             \\{{"from":"EventEase <onboarding@resend.dev>","to":["{s}"],"subject":"{s}","text":"{s}","attachments":[{{"filename":"event.ics","content":"{s}"}}]}}
-        , .{ to, subject, body, encoded });
+        , .{ to_json, subject_json, body_json, encoded });
     } else try std.fmt.allocPrint(alloc,
         \\{{"from":"EventEase <onboarding@resend.dev>","to":["{s}"],"subject":"{s}","text":"{s}"}}
-    , .{ to, subject, body });
+    , .{ to_json, subject_json, body_json });
     defer alloc.free(payload);
 
-    const cmd = try std.fmt.allocPrint(alloc,
-        \\curl -s -w "%{{http_code}}" -o /dev/null -X POST https://api.resend.com/emails \
-        \\  -H "Authorization: Bearer {s}" \
-        \\  -H "Content-Type: application/json" \
-        \\  -d '{s}'
-    , .{ api_key, payload });
-    defer alloc.free(cmd);
+    const auth_header = try std.fmt.allocPrint(alloc, "Authorization: Bearer {s}", .{api_key});
+    defer alloc.free(auth_header);
 
+    // curl kličemo brez lupine, da narekovaji v naslovu dogodka ne pokvarijo ukaza.
     const result = try std.process.run(alloc, io, .{
-        .argv = &[_][]const u8{ "sh", "-c", cmd },
+        .argv = &[_][]const u8{
+            "curl",                           "-s",
+            "-w",                             "%{http_code}",
+            "-o",                             "/dev/null",
+            "-X",                             "POST",
+            "https://api.resend.com/emails",  "-H",
+            auth_header,                      "-H",
+            "Content-Type: application/json", "--data-binary",
+            payload,
+        },
     });
     defer alloc.free(result.stdout);
     defer alloc.free(result.stderr);
@@ -400,7 +354,7 @@ fn sendParticipantFinalizationEmail(
     , .{ participant_name, poll_title, final_slot_start, final_slot_end });
     defer alloc.free(body);
 
-    const ics = try buildIcsContent(alloc, poll_title, final_slot_start, final_slot_end);
+    const ics = try email_content.buildIcsContent(alloc, poll_title, final_slot_start, final_slot_end);
     defer alloc.free(ics);
 
     try sendEmailWithIcs(alloc, io, participant_email, subject, body, ics);
@@ -729,45 +683,6 @@ pub fn getAdminPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
         .suggestions = suggestions,
     }, .{});
 }
-// funkcije za koledar
-fn formatIcsTimestamp(buf: []u8, iso: []const u8) []const u8 {
-    // Convert "2024-06-15T14:00:00Z" → "20240615T140000Z"
-    var out_i: usize = 0;
-    for (iso) |c| {
-        if (c == '-' or c == ':') continue;
-        buf[out_i] = c;
-        out_i += 1;
-    }
-    return buf[0..out_i];
-}
-
-fn buildIcsContent(
-    alloc: std.mem.Allocator,
-    poll_title: []const u8,
-    start_time: []const u8,
-    end_time: []const u8,
-) ![]const u8 {
-    var start_buf: [32]u8 = undefined;
-    var end_buf: [32]u8 = undefined;
-    const start_ics = formatIcsTimestamp(&start_buf, start_time);
-    const end_ics = formatIcsTimestamp(&end_buf, end_time);
-
-    return std.fmt.allocPrint(alloc,
-        \\BEGIN:VCALENDAR
-        \\VERSION:2.0
-        \\PRODID:-//EventEase//Poll//EN
-        \\METHOD:REQUEST
-        \\BEGIN:VEVENT
-        \\UID:{s}-{s}@eventease
-        \\DTSTART:{s}
-        \\DTEND:{s}
-        \\SUMMARY:{s}
-        \\DESCRIPTION:This event was scheduled via a poll.
-        \\END:VEVENT
-        \\END:VCALENDAR
-    , .{ start_time, poll_title, start_ics, end_ics, poll_title });
-}
-
 pub fn shareEmail(app: *App, req: *httpz.Request, res: *httpz.Response) !void {
     const body = req.body() orelse {
         res.status = 400;

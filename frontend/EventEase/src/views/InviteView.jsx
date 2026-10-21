@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import CalendarPicker from "../components/CalendarPicker";
 import VoteResults from "../components/VoteResults";
 import { isValidVoteStatus } from "../utils/eventHelpers.js";
+import { toSuggestedDates } from "../utils/dateHelpers.js";
+import { ApiError, getSharedPoll, submitVote, suggestDates } from "../api/polls.js";
 
 export default function InviteView({ eventData }) {
   const [guestName, setGuestName] = useState("");
@@ -72,29 +74,24 @@ export default function InviteView({ eventData }) {
 
     setIsSuggesting(true);
     try {
-      const response = await fetch(`/api/polls/share/${share_token}/suggest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          suggested_by: guestName.trim(),
-          dates: cleanedDates,
-        }),
+      await suggestDates(share_token, {
+        suggested_by: guestName.trim(),
+        dates: cleanedDates,
       });
-      if (response.ok) {
-        setShowSuggestModal(false);
-        setSuggestionDates([]);
-        setNotice({
-          type: "success",
-          message: "Predlogi uspešno poslani organizatorju.",
-        });
-      } else {
-        setSuggestNotice({
-          type: "error",
-          message: "Napaka pri pošiljanju predlogov.",
-        });
-      }
-    } catch {
-      setSuggestNotice({ type: "error", message: "Omrežna napaka." });
+      setShowSuggestModal(false);
+      setSuggestionDates([]);
+      setNotice({
+        type: "success",
+        message: "Predlogi uspešno poslani organizatorju.",
+      });
+    } catch (err) {
+      setSuggestNotice({
+        type: "error",
+        message:
+          err instanceof ApiError
+            ? "Napaka pri pošiljanju predlogov."
+            : "Omrežna napaka.",
+      });
     } finally {
       setIsSuggesting(false);
     }
@@ -124,24 +121,21 @@ export default function InviteView({ eventData }) {
     });
 
     try {
-      const response = await fetch(`/api/polls/share/${share_token}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          participant_name: guestName.trim(),
-          participant_email: guestEmail.trim(),
-          date_votes: formattedVotes,
-          claimed_tasks: claimedTasks,
-        }),
+      await submitVote(share_token, {
+        participant_name: guestName.trim(),
+        participant_email: guestEmail.trim(),
+        date_votes: formattedVotes,
+        claimed_tasks: claimedTasks,
       });
-      if (response.ok) setIsSubmitted(true);
-      else
-        setNotice({
-          type: "error",
-          message: "Napaka pri oddaji glasu na strežniku.",
-        });
-    } catch {
-      setNotice({ type: "error", message: "Omrežna napaka pri oddaji glasu." });
+      setIsSubmitted(true);
+    } catch (err) {
+      setNotice({
+        type: "error",
+        message:
+          err instanceof ApiError
+            ? "Napaka pri oddaji glasu na strežniku."
+            : "Omrežna napaka pri oddaji glasu.",
+      });
     }
   };
 
@@ -149,27 +143,17 @@ export default function InviteView({ eventData }) {
     try {
       setResultsError("");
       setResultsLoading(true);
-      const response = await fetch(`/api/polls/share/${share_token}`);
-      if (!response.ok)
-        throw new Error("Rezultatov ni mogoče pridobiti. Poskusite znova.");
-      const data = await response.json();
-      const formattedSlots = (data.time_slots || [])
-        .map((slot) => {
-          if (!slot.start_time) return null;
-          return {
-            id: slot.id,
-            date: slot.start_time.replace("T", " ").split(" ")[0],
-            start_time: slot.start_time,
-            end_time: slot.end_time,
-          };
-        })
-        .filter(Boolean);
+      const data = await getSharedPoll(share_token);
       setResultsData({
-        suggestedDates: formattedSlots,
+        suggestedDates: toSuggestedDates(data.time_slots),
         votes: Array.isArray(data.votes) ? data.votes : [],
       });
     } catch (error) {
-      setResultsError(error.message || "Napaka pri nalaganju rezultatov.");
+      setResultsError(
+        error instanceof ApiError
+          ? "Rezultatov ni mogoče pridobiti. Poskusite znova."
+          : error.message || "Napaka pri nalaganju rezultatov.",
+      );
     } finally {
       setResultsLoading(false);
     }

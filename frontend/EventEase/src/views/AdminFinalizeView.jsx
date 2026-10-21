@@ -3,6 +3,23 @@ import { useParams, useSearchParams } from "react-router-dom";
 import VoteResults from "../components/VoteResults";
 import CalendarPicker from "../components/CalendarPicker";
 import FinalizedView from "./FinalizedView";
+import { normalizePgTimestamp, toSuggestedDates } from "../utils/dateHelpers.js";
+import { ApiError, acceptSuggestion, finalizePoll, getAdminPoll } from "../api/polls.js";
+
+function adminState(data) {
+  return {
+    fetchedData: {
+      title: data.title,
+      description: data.description,
+      suggestedDates: toSuggestedDates(data.time_slots),
+      votes: data.votes || [],
+    },
+    suggestions: (data.suggestions || []).map((s) => ({
+      ...s,
+      start_time: normalizePgTimestamp(s.start_time),
+    })),
+  };
+}
 
 export default function AdminFinalizeView({ eventData: propEventData, onBack }) {
   const { adminToken } = useParams();
@@ -27,9 +44,7 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     async function fetchAdminData() {
       setApiLoading(true);
       try {
-        const response = await fetch(`/api/polls/admin/${adminToken}`);
-        if (!response.ok) throw new Error("Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave.");
-        const data = await response.json();
+        const data = await getAdminPoll(adminToken);
 
         // Detect already-finalized poll
         if (data.is_finalized && data.final_slot_id) {
@@ -40,25 +55,15 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
           return;
         }
 
-        setFetchedData({
-          title: data.title,
-          description: data.description,
-          suggestedDates: (data.time_slots || []).map((slot) => ({
-            id: slot.id,
-            date: slot.start_time.replace(" ", "T").split("T")[0],
-            start_time: slot.start_time.replace(" ", "T").split("+")[0],
-            end_time: slot.end_time,
-          })),
-          votes: data.votes || [],
-        });
-        setSuggestions(
-          (data.suggestions || []).map((s) => ({
-            ...s,
-            start_time: s.start_time.replace(" ", "T").split("+")[0],
-          })),
-        );
+        const state = adminState(data);
+        setFetchedData(state.fetchedData);
+        setSuggestions(state.suggestions);
       } catch (err) {
-        setApiError(err.message);
+        setApiError(
+          err instanceof ApiError
+            ? "Podatkov o dogodku ni mogoče najti. Preverite pravilnost povezave."
+            : err.message,
+        );
       } finally {
         setApiLoading(false);
       }
@@ -74,35 +79,22 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
   const handleSuggestionAction = async (suggestionId, action) => {
     if (action === "accept") {
       try {
-        const response = await fetch(`/api/polls/admin/${adminToken}/accept-suggestion`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ suggestion_id: suggestionId }),
+        await acceptSuggestion(adminToken, suggestionId);
+        // Neuspešna osvežitev ni napaka sprejema, zato jo tiho preskočimo.
+        const data = await getAdminPoll(adminToken).catch((err) => {
+          if (err instanceof ApiError) return null;
+          throw err;
         });
-        if (!response.ok) { setNotice({ type: "error", message: "Napaka pri sprejemu predloga." }); return; }
-        const refreshed = await fetch(`/api/polls/admin/${adminToken}`);
-        if (refreshed.ok) {
-          const data = await refreshed.json();
-          setFetchedData({
-            title: data.title,
-            description: data.description,
-            suggestedDates: (data.time_slots || []).map((slot) => ({
-              id: slot.id,
-              date: slot.start_time.replace(" ", "T").split("T")[0],
-              start_time: slot.start_time.replace(" ", "T").split("+")[0],
-              end_time: slot.end_time,
-            })),
-            votes: data.votes || [],
-          });
-          setSuggestions(
-            (data.suggestions || []).map((s) => ({
-              ...s,
-              start_time: s.start_time.replace(" ", "T").split("+")[0],
-            })),
-          );
+        if (data) {
+          const state = adminState(data);
+          setFetchedData(state.fetchedData);
+          setSuggestions(state.suggestions);
         }
-      } catch {
-        setNotice({ type: "error", message: "Omrežna napaka." });
+      } catch (err) {
+        setNotice({
+          type: "error",
+          message: err instanceof ApiError ? "Napaka pri sprejemu predloga." : "Omrežna napaka.",
+        });
         return;
       }
     }
@@ -121,21 +113,19 @@ export default function AdminFinalizeView({ eventData: propEventData, onBack }) 
     setNotice(null);
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/polls/admin/${adminToken}/finalize`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ final_slot_id: selectedSlotId }),
+      await finalizePoll(adminToken, selectedSlotId);
+      // Find the chosen slot and show finalized view immediately
+      const chosen = (fetchedData?.suggestedDates || []).find((s) => s.id === selectedSlotId);
+      setFinalSlot(chosen || null);
+      setIsFinalized(true);
+    } catch (err) {
+      setNotice({
+        type: "error",
+        message:
+          err instanceof ApiError
+            ? "Napaka na strežniku pri zaključevanju glasovanja."
+            : "Omrežna napaka pri zaključevanju.",
       });
-      if (response.ok) {
-        // Find the chosen slot and show finalized view immediately
-        const chosen = (fetchedData?.suggestedDates || []).find((s) => s.id === selectedSlotId);
-        setFinalSlot(chosen || null);
-        setIsFinalized(true);
-      } else {
-        setNotice({ type: "error", message: "Napaka na strežniku pri zaključevanju glasovanja." });
-      }
-    } catch {
-      setNotice({ type: "error", message: "Omrežna napaka pri zaključevanju." });
     } finally {
       setIsSubmitting(false);
     }

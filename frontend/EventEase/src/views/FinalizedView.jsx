@@ -2,10 +2,12 @@
 // Shown to both admin and participant when a poll is already finalized.
 // Receives: title, description, finalSlot { start_time, end_time }, isAdmin (bool)
 
+import { normalizePgTimestamp } from "../utils/dateHelpers.js";
+
 export default function FinalizedView({ title, description, finalSlot, isAdmin = false }) {
   const formatDateTime = (iso) => {
     if (!iso) return "—";
-    const clean = iso.replace(" ", "T").split("+")[0];
+    const clean = normalizePgTimestamp(iso);
     const d = new Date(clean);
     if (isNaN(d)) return iso;
     return d.toLocaleString("sl-SI", {
@@ -20,7 +22,7 @@ export default function FinalizedView({ title, description, finalSlot, isAdmin =
 
   const formatTime = (iso) => {
     if (!iso) return "";
-    const clean = iso.replace(" ", "T").split("+")[0];
+    const clean = normalizePgTimestamp(iso);
     const d = new Date(clean);
     if (isNaN(d)) return "";
     return d.toLocaleTimeString("sl-SI", { hour: "2-digit", minute: "2-digit" });
@@ -116,7 +118,7 @@ export default function FinalizedView({ title, description, finalSlot, isAdmin =
                 style={{ backgroundColor: "var(--color-primary)" }}
               >
                 {(() => {
-                  const clean = (finalSlot.start_time || "").replace(" ", "T").split("+")[0];
+                  const clean = normalizePgTimestamp(finalSlot.start_time);
                   const d = new Date(clean);
                   if (isNaN(d)) return <span style={{ color: "var(--color-on-primary)", fontSize: 11 }}>—</span>;
                   return (

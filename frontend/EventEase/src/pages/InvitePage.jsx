@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 import InviteView from "../views/InviteView";
 import FinalizedView from "../views/FinalizedView";
 import { organizerNameFromEmail } from "../utils/eventHelpers.js";
+import { toSuggestedDates } from "../utils/dateHelpers.js";
+import { ApiError, getSharedPoll } from "../api/polls.js";
 
 export default function InvitePage() {
   const { token } = useParams();
@@ -16,11 +18,7 @@ export default function InvitePage() {
   useEffect(() => {
     async function fetchEvent() {
       try {
-        const response = await fetch(`/api/polls/share/${token}`);
-        if (!response.ok) {
-          throw new Error("Dogodka ni mogoče najti ali pa je bil izbrisan.");
-        }
-        const data = await response.json();
+        const data = await getSharedPoll(token);
 
         // Check finalization first
         if (data.is_finalized && data.final_slot_id) {
@@ -36,18 +34,7 @@ export default function InvitePage() {
           return;
         }
 
-        const formattedSlots = (data.time_slots || [])
-          .map((slot) => {
-            if (!slot.start_time) return null;
-            const cleanDate = slot.start_time.replace("T", " ").split(" ")[0];
-            return {
-              id: slot.id,
-              date: cleanDate,
-              start_time: slot.start_time.replace(" ", "T").split("+")[0],
-              end_time: slot.end_time,
-            };
-          })
-          .filter(Boolean);
+        const formattedSlots = toSuggestedDates(data.time_slots);
 
         setEventData({
           share_token: token,
@@ -59,7 +46,11 @@ export default function InvitePage() {
           votes: data.votes || [],
         });
       } catch (err) {
-        setError(err.message);
+        setError(
+          err instanceof ApiError
+            ? "Dogodka ni mogoče najti ali pa je bil izbrisan."
+            : err.message,
+        );
       } finally {
         setLoading(false);
       }

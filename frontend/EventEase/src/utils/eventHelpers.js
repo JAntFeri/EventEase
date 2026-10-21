@@ -1,8 +1,8 @@
 export function organizerNameFromEmail(email) {
   if (!email || typeof email !== "string") return "Organizator";
-  const at = email.indexOf("@");
-  if (at === -1) return email;
-  const name = email.slice(0, at).trim();
+  const trimmed = email.trim();
+  const at = trimmed.indexOf("@");
+  const name = (at === -1 ? trimmed : trimmed.slice(0, at)).trim();
   return name.length > 0 ? name : "Organizator";
 }
 
@@ -11,5 +11,8 @@ export function isValidVoteStatus(status) {
 }
 
 export function buildSharePath(shareToken) {
-  return `/invite/${shareToken}`;
+  if (typeof shareToken !== "string" || shareToken.trim() === "") {
+    throw new TypeError("buildSharePath: manjka žeton za deljenje.");
+  }
+  return `/invite/${encodeURIComponent(shareToken)}`;
 }

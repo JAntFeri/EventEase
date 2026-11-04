@@ -1,0 +1,515 @@
+{
+  "env": {
+    "base_url": "http://localhost:8080",
+    "run_id": "20261104T101329",
+    "started": "2026-11-04T10:13:29.353Z",
+    "finished": "2026-11-04T10:13:41.644Z",
+    "git": "9c0310e",
+    "node": "v20.19.2",
+    "postgres": "16.14"
+  },
+  "results": [
+    {
+      "id": "TC-01-01",
+      "title": "Uspešno ustvarjanje ankete z dvema terminoma (UI)",
+      "steps": [
+        {
+          "step": "POST /api/polls",
+          "expected": "HTTP 201",
+          "actual": "HTTP 201",
+          "pass": true
+        },
+        {
+          "step": "Prikaz povezav",
+          "expected": "povezava za organizatorja /admin/<uuid>?invite=<uuid> in za udeležence /invite/<uuid>",
+          "actual": "http://localhost:8080/admin/097aab50-094c-4f59-a87a-54f4936a77cd?invite=eb0d2f9c-a7b5-433b-bb2a-7df4a55117a0 | http://localhost:8080/invite/eb0d2f9c-a7b5-433b-bb2a-7df4a55117a0",
+          "pass": true
+        },
+        {
+          "step": "Žetona sta različna",
+          "expected": "admin_token ≠ share_token",
+          "actual": "097aab50-094c-4f59-a87a-54f4936a77cd / eb0d2f9c-a7b5-433b-bb2a-7df4a55117a0",
+          "pass": true
+        },
+        {
+          "step": "Zapis v bazi",
+          "expected": "1 anketa (nezaključena), 2 termina: 10. ob 18:00–19:00 in 15. ob 09:30–10:30",
+          "actual": "TS01 Sestanek 20261104T101329|Mesečni sestanek ekipe|organizator@primer.si|f|2026-12-10 18:00:00+00|2026-12-10 19:00:00+00 ⏎ TS01 Sestanek 20261104T101329|Mesečni sestanek ekipe|organizator@primer.si|f|2026-12-15 09:30:00+00|2026-12-15 10:30:00+00",
+          "pass": true
+        },
+        {
+          "step": "Število POST zahtev",
+          "expected": "1",
+          "actual": "1",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:29.354Z",
+      "evidence": [
+        "TC-01-01_povezave.png"
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-01-02",
+      "title": "Zavrnitev ankete brez naslova (UI)",
+      "steps": [
+        {
+          "step": "Obvestilo uporabniku",
+          "expected": "»Prosimo, vnesite naslov dogodka.« ali brskalnikovo opozorilo na polju",
+          "actual": "prikazano obvestilo aplikacije",
+          "pass": true
+        },
+        {
+          "step": "Zahteva ni poslana",
+          "expected": "0 POST zahtev",
+          "actual": "0 POST zahtev",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:30.335Z",
+      "evidence": [
+        "TC-01-02_brez_naslova.png"
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-01-03",
+      "title": "Zavrnitev ankete brez izbranega termina (UI)",
+      "steps": [
+        {
+          "step": "Obvestilo uporabniku",
+          "expected": "»Prosimo, izberite vsaj en termin na koledarju.«",
+          "actual": "prikazano",
+          "pass": true
+        },
+        {
+          "step": "Zahteva ni poslana",
+          "expected": "0 POST zahtev",
+          "actual": "0 POST zahtev",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:31.517Z",
+      "evidence": [
+        "TC-01-03_brez_termina.png"
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-01-04",
+      "title": "Robna vrednost: termin, ki se začne ob 23:30 (UI)",
+      "steps": [
+        {
+          "step": "Poslani termin",
+          "expected": "end_time je za start_time (konec 21. ob 00:30)",
+          "actual": "start 2026-12-20T23:30:00, end 2026-12-20T00:30:00",
+          "pass": false
+        },
+        {
+          "step": "Zapis v bazi",
+          "expected": "konec termina je za začetkom (ali pa strežnik zahtevo zavrne)",
+          "actual": "2026-12-20 23:30:00+00|2026-12-20 00:30:00+00|f",
+          "pass": false
+        }
+      ],
+      "started": "2026-11-04T10:13:32.535Z",
+      "evidence": [
+        "TC-01-04_pozni_termin.png"
+      ],
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-01-05",
+      "title": "Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)",
+      "steps": [
+        {
+          "step": "Vhod: prazen naslov",
+          "expected": "HTTP 400 (zahteva zavrnjena)",
+          "actual": "HTTP 201 {\"id\":\"f8b044a9-d1b9-4342-9aa0-7b22536aa27c\",\"share_token\":\"6b1ecc06-d656-430e-88a3-6aae5e8dbdda\",\"admin_token\":\"c1f314ed-e66a-4af5-9d38-b0c77d6a9459\"}",
+          "pass": false
+        },
+        {
+          "step": "Vhod: brez terminov",
+          "expected": "HTTP 400 (zahteva zavrnjena)",
+          "actual": "HTTP 201 {\"id\":\"5823b5cd-7ab1-42f7-bfa7-f8b72fa07cbb\",\"share_token\":\"9a224c31-72e8-40a1-b0e8-8a72c5c3e55b\",\"admin_token\":\"aae0dc58-19c5-4818-86e7-d9e8351d468a\"}",
+          "pass": false
+        },
+        {
+          "step": "Vhod: konec pred začetkom",
+          "expected": "HTTP 400 (zahteva zavrnjena)",
+          "actual": "HTTP 201 {\"id\":\"5e0fecf9-346c-4e8d-82f2-166f02bc899f\",\"share_token\":\"32a5991f-48ad-4cfe-b193-e511093c3d29\",\"admin_token\":\"71e7e585-c6e6-43ff-b9e1-5023e212a305\"}",
+          "pass": false
+        },
+        {
+          "step": "Vhod: manjka organizer_email",
+          "expected": "HTTP 400 (zahteva zavrnjena)",
+          "actual": "HTTP 500",
+          "pass": false
+        },
+        {
+          "step": "Vhod: neveljaven datum",
+          "expected": "HTTP 400 (zahteva zavrnjena)",
+          "actual": "HTTP 500",
+          "pass": false
+        },
+        {
+          "step": "Vhod: neveljaven JSON",
+          "expected": "HTTP 400",
+          "actual": "HTTP 500",
+          "pass": false
+        },
+        {
+          "step": "V bazi ni novih anket",
+          "expected": "36 anket",
+          "actual": "40 anket",
+          "pass": false
+        }
+      ],
+      "started": "2026-11-04T10:13:33.693Z",
+      "notes": [
+        "Shranjene neveljavne ankete: TS01 API brez terminov 20261104T101329 (terminov: 0); TS01 API obrnjen 20261104T101329 (terminov: 1);  (terminov: 1); TS01 API datum 20261104T101329 (terminov: 0)"
+      ],
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-02-01",
+      "title": "Oddaja glasu »Da« in »Če bo potrebno« (UI)",
+      "steps": [
+        {
+          "step": "POST /vote",
+          "expected": "HTTP 201",
+          "actual": "HTTP 201",
+          "pass": true
+        },
+        {
+          "step": "Potrditev uporabniku",
+          "expected": "»Hvala, Ana Novak!«",
+          "actual": "prikazano",
+          "pass": true
+        },
+        {
+          "step": "Telo zahteve",
+          "expected": "vsi 3 termini; statusi yes / if_need_be / no",
+          "actual": "[\"yes\",\"if_need_be\",\"no\"]",
+          "pass": true
+        },
+        {
+          "step": "Shranjeni glas (GET share)",
+          "expected": "yes/if_need_be/no, e-pošta ana@primer.si",
+          "actual": "yes/if_need_be/no, e-pošta ana@primer.si",
+          "pass": true
+        },
+        {
+          "step": "Prikaz v skrbniškem pogledu",
+          "expected": "»Ustreza: Ana Novak« pri 10., »Če bo potrebno: Ana Novak« pri 12.",
+          "actual": "prikazano",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:33.863Z",
+      "evidence": [
+        "TC-02-01_izbira.png",
+        "TC-02-01_zahvala.png",
+        "TC-02-01_skrbniski_pogled.png"
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-02-02",
+      "title": "Zavrnitev glasu brez imena (UI)",
+      "steps": [
+        {
+          "step": "Obvestilo uporabniku",
+          "expected": "»Vpišite ime.« ali brskalnikovo opozorilo na polju",
+          "actual": "opozorilo brskalnika: Please fill out this field.",
+          "pass": true
+        },
+        {
+          "step": "Zahteva ni poslana",
+          "expected": "0 POST zahtev",
+          "actual": "0 POST zahtev",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:34.682Z",
+      "evidence": [
+        "TC-02-02_brez_imena.png"
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-02-03",
+      "title": "Sprememba glasu z istim imenom (API)",
+      "steps": [
+        {
+          "step": "POST /vote (drugič)",
+          "expected": "HTTP 201",
+          "actual": "HTTP 201",
+          "pass": true
+        },
+        {
+          "step": "Ni podvojenega glasovalca",
+          "expected": "1 zapis v votes",
+          "actual": "1 zapis(ov)",
+          "pass": true
+        },
+        {
+          "step": "Novi statusi in e-pošta",
+          "expected": "no/yes/yes, ana.nova@primer.si",
+          "actual": "no/yes/yes, ana.nova@primer.si",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:35.633Z",
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-02-04",
+      "title": "Zavrnitev glasu za termin druge ankete (API)",
+      "steps": [
+        {
+          "step": "POST /vote s tujim terminom",
+          "expected": "HTTP 400 »One or more time slots do not belong to this poll.«",
+          "actual": "HTTP 400 One or more time slots do not belong to this poll.",
+          "pass": true
+        },
+        {
+          "step": "Glas ni shranjen",
+          "expected": "0 zapisov",
+          "actual": "0 zapis(ov)",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:35.681Z",
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-02-05",
+      "title": "Zavrnitev neveljavnega statusa glasu (API)",
+      "steps": [
+        {
+          "step": "POST /vote s statusom »maybe«",
+          "expected": "HTTP 400 (napaka odjemalca)",
+          "actual": "HTTP 500",
+          "pass": false
+        },
+        {
+          "step": "Glas ni shranjen (transakcija povrnjena)",
+          "expected": "0 zapisov",
+          "actual": "0 zapis(ov)",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:35.725Z",
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-02-06",
+      "title": "Glasovanje z neobstoječim ali neveljavnim žetonom (API)",
+      "steps": [
+        {
+          "step": "Veljaven, a neobstoječ UUID",
+          "expected": "HTTP 404",
+          "actual": "HTTP 404 Poll not found",
+          "pass": true
+        },
+        {
+          "step": "Žeton v napačni obliki",
+          "expected": "HTTP 404 (ali 400)",
+          "actual": "HTTP 500",
+          "pass": false
+        },
+        {
+          "step": "GET ankete z žetonom v napačni obliki",
+          "expected": "HTTP 404 (ali 400)",
+          "actual": "HTTP 500",
+          "pass": false
+        }
+      ],
+      "started": "2026-11-04T10:13:35.774Z",
+      "evidence": [
+        "TC-02-06_neveljavna_povezava.png"
+      ],
+      "notes": [
+        "Prikaz v brskalniku za /invite/ni-uuid: Ups! Nekaj je šlo narobe Dogodka ni mogoče najti ali pa je bil izbrisan."
+      ],
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-03-02",
+      "title": "Zavrnitev potrditve brez izbranega termina (UI)",
+      "steps": [
+        {
+          "step": "Obvestilo uporabniku",
+          "expected": "»Prosimo, izberite končni termin za zaklep dogodka.«",
+          "actual": "prikazano",
+          "pass": true
+        },
+        {
+          "step": "Zahteva ni poslana",
+          "expected": "0 POST zahtev",
+          "actual": "0 POST zahtev",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:36.915Z",
+      "evidence": [
+        "TC-03-02_brez_izbire.png"
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-03-01",
+      "title": "Potrditev zmagovalnega termina (UI)",
+      "steps": [
+        {
+          "step": "POST /finalize",
+          "expected": "HTTP 200 {success:true}",
+          "actual": "HTTP 200 {\"success\":true}",
+          "pass": true
+        },
+        {
+          "step": "Stanje v bazi",
+          "expected": "is_finalized = t, final_slot_id = 7bf6c48d-95c6-44fe-8441-07310473d31b",
+          "actual": "t|7bf6c48d-95c6-44fe-8441-07310473d31b",
+          "pass": true
+        },
+        {
+          "step": "GET share vrne zaključeno anketo",
+          "expected": "is_finalized: true, final_slot_id: 7bf6c48d-95c6-44fe-8441-07310473d31b",
+          "actual": "is_finalized: true, final_slot_id: 7bf6c48d-95c6-44fe-8441-07310473d31b",
+          "pass": true
+        },
+        {
+          "step": "Pogled udeleženca po zaključku",
+          "expected": "prikazan potrjen termin, obrazca za glasovanje ni",
+          "actual": "glasovalni gumb: ni; besedilo: TERMIN POTRJEN TS03 Zabava 20261104T101329 Testni podatki 20261104T101329 IZBRANI TERMIN 5 DEC. sobota, 5. december 2026",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:37.819Z",
+      "evidence": [
+        "TC-03-01_izbira.png",
+        "TC-03-01_potrjeno_admin.png",
+        "TC-03-01_potrjeno_udelezenec.png"
+      ],
+      "notes": [
+        "Pošiljanje e-pošte je v testnem okolju izklopljeno (DISABLE_EMAILS=true); prejem e-pošte in .ics ni preverjen."
+      ],
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-03-03",
+      "title": "Ponovna finalizacija zaključene ankete (API)",
+      "steps": [
+        {
+          "step": "POST /finalize (drugič)",
+          "expected": "HTTP 409 »Poll has already been finalized.«",
+          "actual": "HTTP 409 Poll has already been finalized.",
+          "pass": true
+        },
+        {
+          "step": "Izbrani termin ostane nespremenjen",
+          "expected": "7bf6c48d-95c6-44fe-8441-07310473d31b",
+          "actual": "7bf6c48d-95c6-44fe-8441-07310473d31b",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:40.310Z",
+      "verdict": "USPEŠEN"
+    },
+    {
+      "id": "TC-03-04",
+      "title": "Glasovanje po zaključku ankete (API)",
+      "steps": [
+        {
+          "step": "POST /vote na zaključeno anketo",
+          "expected": "zavrnjeno (HTTP 409 ali 400)",
+          "actual": "HTTP 201 {\"success\":true}",
+          "pass": false
+        },
+        {
+          "step": "Število glasov nespremenjeno",
+          "expected": "3",
+          "actual": "4",
+          "pass": false
+        }
+      ],
+      "started": "2026-11-04T10:13:40.351Z",
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-03-05",
+      "title": "Finalizacija s terminom, ki ne pripada anketi (API)",
+      "steps": [
+        {
+          "step": "POST /finalize s tujim terminom",
+          "expected": "HTTP 400, anketa ostane odprta",
+          "actual": "HTTP 200 {\"success\":true}",
+          "pass": false
+        },
+        {
+          "step": "Stanje v bazi",
+          "expected": "is_finalized = f, final_slot_id = -",
+          "actual": "t|1ec0716a-8a65-4d26-8c07-2677ed80a94c",
+          "pass": false
+        }
+      ],
+      "started": "2026-11-04T10:13:40.426Z",
+      "evidence": [
+        "TC-03-05_tuj_termin_udelezenec.png"
+      ],
+      "notes": [
+        "Pogled udeleženca: TERMIN POTRJEN TS03 Tuj termin 20261104T101329 Testni podatki 20261104T101329 IZBRANI TERMIN Podatki o terminu niso na voljo. Organizator je potrdil zgornji termin. Če ste vnesli e-pošto ste prejeli d"
+      ],
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-03-06",
+      "title": "Finalizacija z neobstoječim terminom (API)",
+      "steps": [
+        {
+          "step": "POST /finalize z neobstoječim terminom",
+          "expected": "HTTP 400 »Final slot not found«",
+          "actual": "HTTP 500 Internal Server Error",
+          "pass": false
+        },
+        {
+          "step": "Anketa ostane odprta",
+          "expected": "f|-",
+          "actual": "f|-",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:41.536Z",
+      "verdict": "NEUSPEŠEN"
+    },
+    {
+      "id": "TC-03-07",
+      "title": "Finalizacija z žetonom za udeležence namesto skrbniškega (API)",
+      "steps": [
+        {
+          "step": "POST /admin/<share_token>/finalize",
+          "expected": "HTTP 404",
+          "actual": "HTTP 404 Poll not found",
+          "pass": true
+        },
+        {
+          "step": "GET /admin/<share_token>",
+          "expected": "HTTP 404",
+          "actual": "HTTP 404",
+          "pass": true
+        },
+        {
+          "step": "Anketa ostane odprta",
+          "expected": "f",
+          "actual": "f",
+          "pass": true
+        }
+      ],
+      "started": "2026-11-04T10:13:41.582Z",
+      "verdict": "USPEŠEN"
+    }
+  ]
+}

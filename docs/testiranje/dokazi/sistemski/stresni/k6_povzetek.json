@@ -1,0 +1,243 @@
+{
+    "root_group": {
+        "groups": {},
+        "checks": {
+                "domača stran 200": {
+                    "name": "domača stran 200",
+                    "path": "::domača stran 200",
+                    "id": "bd6a63a537232e8059e3602007309e43",
+                    "passes": 23943,
+                    "fails": 4882
+                },
+                "ustvarjanje 201": {
+                    "path": "::ustvarjanje 201",
+                    "id": "be779d3db36e9cacab486ef3b3667f75",
+                    "passes": 15487,
+                    "fails": 13320,
+                    "name": "ustvarjanje 201"
+                },
+                "ustvarjanje vrne žetone": {
+                    "fails": 13320,
+                    "name": "ustvarjanje vrne žetone",
+                    "path": "::ustvarjanje vrne žetone",
+                    "id": "8b389e1f3692df0ea7637d03a88815e0",
+                    "passes": 15487
+                },
+                "skrbniški pogled 200": {
+                    "fails": 1684,
+                    "name": "skrbniški pogled 200",
+                    "path": "::skrbniški pogled 200",
+                    "id": "995ce8f95fe864d8094d17eb74dbdfb5",
+                    "passes": 28104
+                },
+                "stran povabila 200": {
+                    "passes": 270824,
+                    "fails": 22672,
+                    "name": "stran povabila 200",
+                    "path": "::stran povabila 200",
+                    "id": "05c8f709c6c52161d3e0af2d6b08e01e"
+                },
+                "branje ankete 200": {
+                    "name": "branje ankete 200",
+                    "path": "::branje ankete 200",
+                    "id": "35b3c3a0a537ea960f723af1b21d74dd",
+                    "passes": 257218,
+                    "fails": 36084
+                },
+                "glas 201": {
+                    "fails": 51284,
+                    "name": "glas 201",
+                    "path": "::glas 201",
+                    "id": "219541a70137b94a270180af9f0436a4",
+                    "passes": 241867
+                },
+                "glas success": {
+                    "name": "glas success",
+                    "path": "::glas success",
+                    "id": "22f0b9df93765382c899e30fc300a292",
+                    "passes": 241867,
+                    "fails": 51284
+                },
+                "predlog 201": {
+                    "name": "predlog 201",
+                    "path": "::predlog 201",
+                    "id": "7747831dbdcbd11f7affb35eb2402e52",
+                    "passes": 24651,
+                    "fails": 4795
+                },
+                "potrditev 200": {
+                    "name": "potrditev 200",
+                    "path": "::potrditev 200",
+                    "id": "f5805eddf24f773c4e354e78768b4596",
+                    "passes": 12272,
+                    "fails": 2035
+                }
+            },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "metrics": {
+        "dropped_iterations": {
+            "count": 1176,
+            "rate": 1.7043245488742846
+        },
+        "http_reqs": {
+            "count": 1011122,
+            "rate": 1465.3741892065173
+        },
+        "data_sent": {
+            "count": 266095188,
+            "rate": 385639.9330320731
+        },
+        "glasovi_poskusi": {
+            "count": 293302,
+            "rate": 425.06955683156923
+        },
+        "potrditve_potrjene": {
+            "rate": 17.785264339953418,
+            "count": 12272
+        },
+        "http_req_waiting": {
+            "min": 0,
+            "med": 3.896563,
+            "p(90)": 405.28354060000004,
+            "p(95)": 529.0225562499991,
+            "p(99)": 1216.5920751500007,
+            "max": 3028.647391,
+            "avg": 120.92767914994216
+        },
+        "checks": {
+            "passes": 1131720,
+            "fails": 201360,
+            "value": 0.848951300747142
+        },
+        "iterations": {
+            "count": 335972,
+            "rate": 486.90929195101285
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0,
+            "avg": 0
+        },
+        "http_req_connecting": {
+            "avg": 0.057370411277768193,
+            "min": 0,
+            "med": 0,
+            "p(90)": 0.092165,
+            "p(95)": 0.12801464999999967,
+            "p(99)": 0.7777413900000015,
+            "max": 43.165207
+        },
+        "http_req_receiving": {
+            "p(95)": 0.0636338999999999,
+            "p(99)": 0.16648011000000032,
+            "max": 88.321514,
+            "avg": 0.04602282822745474,
+            "min": 0,
+            "med": 0.03145,
+            "p(90)": 0.046377
+        },
+        "vus": {
+            "value": 0,
+            "min": 0,
+            "max": 972
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 424.88471549999997,
+            "p(95)": 582.7536655,
+            "p(99)": 1260.5676032499996,
+            "max": 3028.71312,
+            "avg": 134.23313415351836,
+            "min": 0.096273,
+            "med": 3.904216
+        },
+        "predlogi_potrjeni": {
+            "count": 24651,
+            "rate": 35.7255990257653
+        },
+        "http_req_duration": {
+            "max": 3028.71312,
+            "avg": 121.01251103050559,
+            "min": 0,
+            "med": 4.007967,
+            "p(90)": 405.4137713,
+            "p(95)": 529.1264852499994,
+            "p(99)": 1216.6410222700006
+        },
+        "iteration_duration": {
+            "med": 256.86497099999997,
+            "p(90)": 1194.237221100002,
+            "p(95)": 1613.4233324,
+            "p(99)": 2186.474886289998,
+            "max": 5363.190885,
+            "avg": 425.722921221245,
+            "min": 0.973268
+        },
+        "http_req_duration{scenario:okrevanje,vrsta:api}": {
+            "p(90)": 11.2495616,
+            "p(95)": 13.318105399999995,
+            "p(99)": 17.956227399999996,
+            "max": 75.803859,
+            "avg": 5.340793729135126,
+            "min": 0.745182,
+            "med": 3.729375,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_req_blocked": {
+            "avg": 0.07634049068163687,
+            "min": 0.001202,
+            "med": 0.0036,
+            "p(90)": 0.128991,
+            "p(95)": 0.18356449999999955,
+            "p(99)": 0.9253164100000103,
+            "max": 55.514586
+        },
+        "data_received": {
+            "count": 1384993729,
+            "rate": 2007209.8744656786
+        },
+        "glasovi_potrjeni": {
+            "count": 241867,
+            "rate": 350.52709665185085
+        },
+        "http_req_sending": {
+            "max": 56.91244,
+            "avg": 0.03880905233591945,
+            "min": 0,
+            "med": 0.010817,
+            "p(90)": 0.018412,
+            "p(95)": 0.03975194999999995,
+            "p(99)": 0.6184974300000006
+        },
+        "vus_max": {
+            "min": 200,
+            "max": 1029,
+            "value": 1029
+        },
+        "http_req_failed{scenario:okrevanje}": {
+            "passes": 0,
+            "fails": 18306,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_failed": {
+            "fails": 874366,
+            "passes": 136756,
+            "value": 0.13525173025609175
+        },
+        "ankete_ustvarjene": {
+            "count": 15487,
+            "rate": 22.44462099355106
+        }
+    }
+}

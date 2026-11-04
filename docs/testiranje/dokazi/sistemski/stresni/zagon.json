@@ -1,0 +1,12 @@
+{
+  "run_id": "stresni-20261104T121511",
+  "base_url": "http://localhost:8080",
+  "zacetek": 1793790914,
+  "konec": 1793791605,
+  "k6_izhodna_koda": 0,
+  "k6_verzija": "k6 v2.3.0 (commit/e088784614, go1.26.8, linux/amd64)",
+  "git": "9c0310e",
+  "pg_pred": "2266800,98,0",
+  "pg_po": "12134775,332,0",
+  "baza": "15508,12280,242018,24668,0"
+}

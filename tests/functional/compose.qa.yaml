@@ -1,0 +1,7 @@
+# Prepis za testno okolje: lokalni Postgres zaseda 5432, zato je testna baza na 127.0.0.1:5433.
+services:
+  db:
+    ports: !override
+      - "127.0.0.1:5433:5432"
+  mailpit:
+    ports: !reset []

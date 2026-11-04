@@ -1,0 +1,212 @@
+
+TC-01-01 Uspešno ustvarjanje ankete z dvema terminoma (UI)
+  [OK ] POST /api/polls
+        pričakovano: HTTP 201
+        dejansko:    HTTP 201
+  [OK ] Prikaz povezav
+        pričakovano: povezava za organizatorja /admin/<uuid>?invite=<uuid> in za udeležence /invite/<uuid>
+        dejansko:    http://localhost:8080/admin/097aab50-094c-4f59-a87a-54f4936a77cd?invite=eb0d2f9c-a7b5-433b-bb2a-7df4a55117a0 | http://localhost:8080/invite/eb0d2f9c-a7b5-433b-bb2a-7df4a55117a0
+  [OK ] Žetona sta različna
+        pričakovano: admin_token ≠ share_token
+        dejansko:    097aab50-094c-4f59-a87a-54f4936a77cd / eb0d2f9c-a7b5-433b-bb2a-7df4a55117a0
+  [OK ] Zapis v bazi
+        pričakovano: 1 anketa (nezaključena), 2 termina: 10. ob 18:00–19:00 in 15. ob 09:30–10:30
+        dejansko:    TS01 Sestanek 20261104T101329|Mesečni sestanek ekipe|organizator@primer.si|f|2026-12-10 18:00:00+00|2026-12-10 19:00:00+00 ⏎ TS01 Sestanek 20261104T101329|Mesečni sestanek ekipe|organizator@primer.si|f|2026-12-15 09:30:00+00|2026-12-15 10:30:00+00
+  [OK ] Število POST zahtev
+        pričakovano: 1
+        dejansko:    1
+
+TC-01-02 Zavrnitev ankete brez naslova (UI)
+  [OK ] Obvestilo uporabniku
+        pričakovano: »Prosimo, vnesite naslov dogodka.« ali brskalnikovo opozorilo na polju
+        dejansko:    prikazano obvestilo aplikacije
+  [OK ] Zahteva ni poslana
+        pričakovano: 0 POST zahtev
+        dejansko:    0 POST zahtev
+
+TC-01-03 Zavrnitev ankete brez izbranega termina (UI)
+  [OK ] Obvestilo uporabniku
+        pričakovano: »Prosimo, izberite vsaj en termin na koledarju.«
+        dejansko:    prikazano
+  [OK ] Zahteva ni poslana
+        pričakovano: 0 POST zahtev
+        dejansko:    0 POST zahtev
+
+TC-01-04 Robna vrednost: termin, ki se začne ob 23:30 (UI)
+  [NOK] Poslani termin
+        pričakovano: end_time je za start_time (konec 21. ob 00:30)
+        dejansko:    start 2026-12-20T23:30:00, end 2026-12-20T00:30:00
+  [NOK] Zapis v bazi
+        pričakovano: konec termina je za začetkom (ali pa strežnik zahtevo zavrne)
+        dejansko:    2026-12-20 23:30:00+00|2026-12-20 00:30:00+00|f
+
+TC-01-05 Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)
+  [NOK] Vhod: prazen naslov
+        pričakovano: HTTP 400 (zahteva zavrnjena)
+        dejansko:    HTTP 201 {"id":"f8b044a9-d1b9-4342-9aa0-7b22536aa27c","share_token":"6b1ecc06-d656-430e-88a3-6aae5e8dbdda","admin_token":"c1f314ed-e66a-4af5-9d38-b0c77d6a9459"}
+  [NOK] Vhod: brez terminov
+        pričakovano: HTTP 400 (zahteva zavrnjena)
+        dejansko:    HTTP 201 {"id":"5823b5cd-7ab1-42f7-bfa7-f8b72fa07cbb","share_token":"9a224c31-72e8-40a1-b0e8-8a72c5c3e55b","admin_token":"aae0dc58-19c5-4818-86e7-d9e8351d468a"}
+  [NOK] Vhod: konec pred začetkom
+        pričakovano: HTTP 400 (zahteva zavrnjena)
+        dejansko:    HTTP 201 {"id":"5e0fecf9-346c-4e8d-82f2-166f02bc899f","share_token":"32a5991f-48ad-4cfe-b193-e511093c3d29","admin_token":"71e7e585-c6e6-43ff-b9e1-5023e212a305"}
+  [NOK] Vhod: manjka organizer_email
+        pričakovano: HTTP 400 (zahteva zavrnjena)
+        dejansko:    HTTP 500
+  [NOK] Vhod: neveljaven datum
+        pričakovano: HTTP 400 (zahteva zavrnjena)
+        dejansko:    HTTP 500
+  [NOK] Vhod: neveljaven JSON
+        pričakovano: HTTP 400
+        dejansko:    HTTP 500
+  [NOK] V bazi ni novih anket
+        pričakovano: 36 anket
+        dejansko:    40 anket
+
+TC-02-01 Oddaja glasu »Da« in »Če bo potrebno« (UI)
+  [OK ] POST /vote
+        pričakovano: HTTP 201
+        dejansko:    HTTP 201
+  [OK ] Potrditev uporabniku
+        pričakovano: »Hvala, Ana Novak!«
+        dejansko:    prikazano
+  [OK ] Telo zahteve
+        pričakovano: vsi 3 termini; statusi yes / if_need_be / no
+        dejansko:    ["yes","if_need_be","no"]
+  [OK ] Shranjeni glas (GET share)
+        pričakovano: yes/if_need_be/no, e-pošta ana@primer.si
+        dejansko:    yes/if_need_be/no, e-pošta ana@primer.si
+  [OK ] Prikaz v skrbniškem pogledu
+        pričakovano: »Ustreza: Ana Novak« pri 10., »Če bo potrebno: Ana Novak« pri 12.
+        dejansko:    prikazano
+
+TC-02-02 Zavrnitev glasu brez imena (UI)
+  [OK ] Obvestilo uporabniku
+        pričakovano: »Vpišite ime.« ali brskalnikovo opozorilo na polju
+        dejansko:    opozorilo brskalnika: Please fill out this field.
+  [OK ] Zahteva ni poslana
+        pričakovano: 0 POST zahtev
+        dejansko:    0 POST zahtev
+
+TC-02-03 Sprememba glasu z istim imenom (API)
+  [OK ] POST /vote (drugič)
+        pričakovano: HTTP 201
+        dejansko:    HTTP 201
+  [OK ] Ni podvojenega glasovalca
+        pričakovano: 1 zapis v votes
+        dejansko:    1 zapis(ov)
+  [OK ] Novi statusi in e-pošta
+        pričakovano: no/yes/yes, ana.nova@primer.si
+        dejansko:    no/yes/yes, ana.nova@primer.si
+
+TC-02-04 Zavrnitev glasu za termin druge ankete (API)
+  [OK ] POST /vote s tujim terminom
+        pričakovano: HTTP 400 »One or more time slots do not belong to this poll.«
+        dejansko:    HTTP 400 One or more time slots do not belong to this poll.
+  [OK ] Glas ni shranjen
+        pričakovano: 0 zapisov
+        dejansko:    0 zapis(ov)
+
+TC-02-05 Zavrnitev neveljavnega statusa glasu (API)
+  [NOK] POST /vote s statusom »maybe«
+        pričakovano: HTTP 400 (napaka odjemalca)
+        dejansko:    HTTP 500
+  [OK ] Glas ni shranjen (transakcija povrnjena)
+        pričakovano: 0 zapisov
+        dejansko:    0 zapis(ov)
+
+TC-02-06 Glasovanje z neobstoječim ali neveljavnim žetonom (API)
+  [OK ] Veljaven, a neobstoječ UUID
+        pričakovano: HTTP 404
+        dejansko:    HTTP 404 Poll not found
+  [NOK] Žeton v napačni obliki
+        pričakovano: HTTP 404 (ali 400)
+        dejansko:    HTTP 500
+  [NOK] GET ankete z žetonom v napačni obliki
+        pričakovano: HTTP 404 (ali 400)
+        dejansko:    HTTP 500
+
+TC-03-02 Zavrnitev potrditve brez izbranega termina (UI)
+  [OK ] Obvestilo uporabniku
+        pričakovano: »Prosimo, izberite končni termin za zaklep dogodka.«
+        dejansko:    prikazano
+  [OK ] Zahteva ni poslana
+        pričakovano: 0 POST zahtev
+        dejansko:    0 POST zahtev
+
+TC-03-01 Potrditev zmagovalnega termina (UI)
+  [OK ] POST /finalize
+        pričakovano: HTTP 200 {success:true}
+        dejansko:    HTTP 200 {"success":true}
+  [OK ] Stanje v bazi
+        pričakovano: is_finalized = t, final_slot_id = 7bf6c48d-95c6-44fe-8441-07310473d31b
+        dejansko:    t|7bf6c48d-95c6-44fe-8441-07310473d31b
+  [OK ] GET share vrne zaključeno anketo
+        pričakovano: is_finalized: true, final_slot_id: 7bf6c48d-95c6-44fe-8441-07310473d31b
+        dejansko:    is_finalized: true, final_slot_id: 7bf6c48d-95c6-44fe-8441-07310473d31b
+  [OK ] Pogled udeleženca po zaključku
+        pričakovano: prikazan potrjen termin, obrazca za glasovanje ni
+        dejansko:    glasovalni gumb: ni; besedilo: TERMIN POTRJEN TS03 Zabava 20261104T101329 Testni podatki 20261104T101329 IZBRANI TERMIN 5 DEC. sobota, 5. december 2026
+
+TC-03-03 Ponovna finalizacija zaključene ankete (API)
+  [OK ] POST /finalize (drugič)
+        pričakovano: HTTP 409 »Poll has already been finalized.«
+        dejansko:    HTTP 409 Poll has already been finalized.
+  [OK ] Izbrani termin ostane nespremenjen
+        pričakovano: 7bf6c48d-95c6-44fe-8441-07310473d31b
+        dejansko:    7bf6c48d-95c6-44fe-8441-07310473d31b
+
+TC-03-04 Glasovanje po zaključku ankete (API)
+  [NOK] POST /vote na zaključeno anketo
+        pričakovano: zavrnjeno (HTTP 409 ali 400)
+        dejansko:    HTTP 201 {"success":true}
+  [NOK] Število glasov nespremenjeno
+        pričakovano: 3
+        dejansko:    4
+
+TC-03-05 Finalizacija s terminom, ki ne pripada anketi (API)
+  [NOK] POST /finalize s tujim terminom
+        pričakovano: HTTP 400, anketa ostane odprta
+        dejansko:    HTTP 200 {"success":true}
+  [NOK] Stanje v bazi
+        pričakovano: is_finalized = f, final_slot_id = -
+        dejansko:    t|1ec0716a-8a65-4d26-8c07-2677ed80a94c
+
+TC-03-06 Finalizacija z neobstoječim terminom (API)
+  [NOK] POST /finalize z neobstoječim terminom
+        pričakovano: HTTP 400 »Final slot not found«
+        dejansko:    HTTP 500 Internal Server Error
+  [OK ] Anketa ostane odprta
+        pričakovano: f|-
+        dejansko:    f|-
+
+TC-03-07 Finalizacija z žetonom za udeležence namesto skrbniškega (API)
+  [OK ] POST /admin/<share_token>/finalize
+        pričakovano: HTTP 404
+        dejansko:    HTTP 404 Poll not found
+  [OK ] GET /admin/<share_token>
+        pričakovano: HTTP 404
+        dejansko:    HTTP 404
+  [OK ] Anketa ostane odprta
+        pričakovano: f
+        dejansko:    f
+
+Povzetek:
+  USPEŠEN    TC-01-01 Uspešno ustvarjanje ankete z dvema terminoma (UI)
+  USPEŠEN    TC-01-02 Zavrnitev ankete brez naslova (UI)
+  USPEŠEN    TC-01-03 Zavrnitev ankete brez izbranega termina (UI)
+  NEUSPEŠEN  TC-01-04 Robna vrednost: termin, ki se začne ob 23:30 (UI)
+  NEUSPEŠEN  TC-01-05 Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)
+  USPEŠEN    TC-02-01 Oddaja glasu »Da« in »Če bo potrebno« (UI)
+  USPEŠEN    TC-02-02 Zavrnitev glasu brez imena (UI)
+  USPEŠEN    TC-02-03 Sprememba glasu z istim imenom (API)
+  USPEŠEN    TC-02-04 Zavrnitev glasu za termin druge ankete (API)
+  NEUSPEŠEN  TC-02-05 Zavrnitev neveljavnega statusa glasu (API)
+  NEUSPEŠEN  TC-02-06 Glasovanje z neobstoječim ali neveljavnim žetonom (API)
+  USPEŠEN    TC-03-02 Zavrnitev potrditve brez izbranega termina (UI)
+  USPEŠEN    TC-03-01 Potrditev zmagovalnega termina (UI)
+  USPEŠEN    TC-03-03 Ponovna finalizacija zaključene ankete (API)
+  NEUSPEŠEN  TC-03-04 Glasovanje po zaključku ankete (API)
+  NEUSPEŠEN  TC-03-05 Finalizacija s terminom, ki ne pripada anketi (API)
+  NEUSPEŠEN  TC-03-06 Finalizacija z neobstoječim terminom (API)
+  USPEŠEN    TC-03-07 Finalizacija z žetonom za udeležence namesto skrbniškega (API)

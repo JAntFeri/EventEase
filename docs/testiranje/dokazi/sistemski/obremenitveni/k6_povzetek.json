@@ -1,0 +1,262 @@
+{
+    "root_group": {
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "domača stran 200": {
+                    "name": "domača stran 200",
+                    "path": "::domača stran 200",
+                    "id": "bd6a63a537232e8059e3602007309e43",
+                    "passes": 417,
+                    "fails": 0
+                },
+                "ustvarjanje 201": {
+                    "name": "ustvarjanje 201",
+                    "path": "::ustvarjanje 201",
+                    "id": "be779d3db36e9cacab486ef3b3667f75",
+                    "passes": 417,
+                    "fails": 0
+                },
+                "ustvarjanje vrne žetone": {
+                    "name": "ustvarjanje vrne žetone",
+                    "path": "::ustvarjanje vrne žetone",
+                    "id": "8b389e1f3692df0ea7637d03a88815e0",
+                    "passes": 417,
+                    "fails": 0
+                },
+                "skrbniški pogled 200": {
+                    "path": "::skrbniški pogled 200",
+                    "id": "995ce8f95fe864d8094d17eb74dbdfb5",
+                    "passes": 692,
+                    "fails": 0,
+                    "name": "skrbniški pogled 200"
+                },
+                "stran povabila 200": {
+                    "name": "stran povabila 200",
+                    "path": "::stran povabila 200",
+                    "id": "05c8f709c6c52161d3e0af2d6b08e01e",
+                    "passes": 6589,
+                    "fails": 0
+                },
+                "branje ankete 200": {
+                    "name": "branje ankete 200",
+                    "path": "::branje ankete 200",
+                    "id": "35b3c3a0a537ea960f723af1b21d74dd",
+                    "passes": 6589,
+                    "fails": 0
+                },
+                "glas 201": {
+                    "id": "219541a70137b94a270180af9f0436a4",
+                    "passes": 6586,
+                    "fails": 3,
+                    "name": "glas 201",
+                    "path": "::glas 201"
+                },
+                "glas success": {
+                    "passes": 6586,
+                    "fails": 3,
+                    "name": "glas success",
+                    "path": "::glas success",
+                    "id": "22f0b9df93765382c899e30fc300a292"
+                },
+                "predlog 201": {
+                    "name": "predlog 201",
+                    "path": "::predlog 201",
+                    "id": "7747831dbdcbd11f7affb35eb2402e52",
+                    "passes": 684,
+                    "fails": 0
+                },
+                "potrditev 200": {
+                    "passes": 275,
+                    "fails": 0,
+                    "name": "potrditev 200",
+                    "path": "::potrditev 200",
+                    "id": "f5805eddf24f773c4e354e78768b4596"
+                }
+            },
+        "name": "",
+        "path": ""
+    },
+    "metrics": {
+        "http_req_duration{vrsta:api}": {
+            "max": 40.605057,
+            "avg": 11.691383556080229,
+            "min": 0.538907,
+            "med": 11.7125725,
+            "p(90)": 21.0203535,
+            "p(95)": 23.37514925,
+            "p(99)": 26.050919849999993,
+            "thresholds": {
+                "p(95)<300": false,
+                "p(99)<800": false
+            }
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 22.357419,
+            "p(99)": 25.56846836,
+            "max": 40.605057,
+            "avg": 8.247574317003021,
+            "min": 0.117612,
+            "med": 6.657045,
+            "p(90)": 18.628716800000003
+        },
+        "iterations": {
+            "rate": 9.188073290546582,
+            "count": 7281
+        },
+        "glasovi_poskusi": {
+            "count": 6589,
+            "rate": 8.314821440930013
+        },
+        "http_req_waiting": {
+            "p(99)": 25.40124890000001,
+            "max": 40.431691,
+            "avg": 8.11183250808924,
+            "min": 0.09514,
+            "med": 6.546603,
+            "p(90)": 18.476468000000008,
+            "p(95)": 22.1934572
+        },
+        "glasovi_potrjeni": {
+            "count": 6586,
+            "rate": 8.31103566701549
+        },
+        "http_req_duration{vrsta:staticno}": {
+            "med": 0.808978,
+            "p(90)": 0.966469,
+            "p(95)": 1.0137035,
+            "p(99)": 1.2593765499999994,
+            "max": 4.923429,
+            "avg": 0.7627947696260358,
+            "min": 0.117612,
+            "thresholds": {
+                "p(95)<100": false
+            }
+        },
+        "http_req_failed": {
+            "passes": 3,
+            "fails": 22249,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0.00013481934208161065
+        },
+        "vus_max": {
+            "value": 150,
+            "min": 150,
+            "max": 150
+        },
+        "http_req_tls_handshaking": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0
+        },
+        "http_req_blocked": {
+            "p(90)": 0.013901,
+            "p(95)": 0.015530900000000002,
+            "p(99)": 0.039887700000000206,
+            "max": 4.768337,
+            "avg": 0.013465491596260969,
+            "min": 0.001425,
+            "med": 0.010714
+        },
+        "data_sent": {
+            "rate": 7426.293993568345,
+            "count": 5884895
+        },
+        "http_req_duration{name:POST /api/polls/share/:token/vote}": {
+            "avg": 14.216412998937697,
+            "min": 2.175813,
+            "med": 13.221841,
+            "p(90)": 23.633651800000003,
+            "p(95)": 24.9662794,
+            "p(99)": 27.03506964,
+            "max": 40.605057,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_req_sending": {
+            "p(90)": 0.051372,
+            "p(95)": 0.05764495000000001,
+            "p(99)": 0.08311870000000005,
+            "max": 1.445291,
+            "avg": 0.03530234244112896,
+            "min": 0.003783,
+            "med": 0.0348295
+        },
+        "data_received": {
+            "count": 37711993,
+            "rate": 47589.69312135416
+        },
+        "http_req_duration": {
+            "avg": 8.25053810228295,
+            "min": 0.117612,
+            "med": 6.663289499999999,
+            "p(90)": 18.630655100000002,
+            "p(95)": 22.363954100000004,
+            "p(99)": 25.573536660000006,
+            "max": 40.605057
+        },
+        "http_reqs": {
+            "rate": 28.080347048653007,
+            "count": 22252
+        },
+        "vus": {
+            "value": 2,
+            "min": 1,
+            "max": 150
+        },
+        "predlogi_potrjeni": {
+            "count": 684,
+            "rate": 0.8631564525111746
+        },
+        "iteration_duration": {
+            "max": 27609.3682,
+            "avg": 14373.014470403692,
+            "min": 3025.582614,
+            "med": 14330.168396,
+            "p(90)": 20830.601569,
+            "p(95)": 21660.20968,
+            "p(99)": 24304.228172399988
+        },
+        "potrditve_potrjene": {
+            "count": 275,
+            "rate": 0.34702927549791374
+        },
+        "checks": {
+            "passes": 29252,
+            "fails": 6,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 0.9997949278829722
+        },
+        "ankete_ustvarjene": {
+            "count": 417,
+            "rate": 0.5262225741186547
+        },
+        "http_req_connecting": {
+            "p(99)": 0,
+            "max": 4.570948,
+            "avg": 0.0022287133291389533,
+            "min": 0,
+            "med": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_receiving": {
+            "avg": 0.10340325175265173,
+            "min": 0.014144,
+            "med": 0.10610549999999999,
+            "p(90)": 0.1382332,
+            "p(95)": 0.1514839,
+            "p(99)": 0.20132292000000035,
+            "max": 1.945004
+        }
+    }
+}

@@ -1,0 +1,82 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+     execution: local
+        script: /home/jurea/Documents/Šola/Praktikum2/tests/system/k6/stresni.js
+ web dashboard: http://127.0.0.1:5665
+        output: csv (/home/jurea/Documents/Šola/Praktikum2/tests/system/surovo/stresni-20261104T121511/k6_meritve.csv.gz)
+
+     scenarios: (100.00%) 2 scenarios, 3000 max VUs, 12m0s max duration (incl. graceful stop):
+              * stres: Up to 1200.00 iterations/s for 9m20s over 14 stages (maxVUs: 200-3000)
+              * okrevanje: 50.00 iterations/s for 2m0s (maxVUs: 100-500, startTime: 9m30s, gracefulStop: 30s)
+
+  █ THRESHOLDS 
+
+    http_req_duration{scenario:okrevanje,vrsta:api}
+    ✓ 'p(95)<300' p(95)=13.31ms
+
+    http_req_failed{scenario:okrevanje}
+    ✓ 'rate<0.01' rate=0.00%
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 1333080 1931.973614/s
+    checks_succeeded...: 84.89%  1131720 out of 1333080
+    checks_failed......: 15.10%  201360 out of 1333080
+
+    ✗ domača stran 200
+      ↳  83% — ✓ 23943 / ✗ 4882
+    ✗ ustvarjanje 201
+      ↳  53% — ✓ 15487 / ✗ 13320
+    ✗ ustvarjanje vrne žetone
+      ↳  53% — ✓ 15487 / ✗ 13320
+    ✗ skrbniški pogled 200
+      ↳  94% — ✓ 28104 / ✗ 1684
+    ✗ stran povabila 200
+      ↳  92% — ✓ 270824 / ✗ 22672
+    ✗ branje ankete 200
+      ↳  87% — ✓ 257218 / ✗ 36084
+    ✗ glas 201
+      ↳  82% — ✓ 241867 / ✗ 51284
+    ✗ glas success
+      ↳  82% — ✓ 241867 / ✗ 51284
+    ✗ predlog 201
+      ↳  83% — ✓ 24651 / ✗ 4795
+    ✗ potrditev 200
+      ↳  85% — ✓ 12272 / ✗ 2035
+
+    CUSTOM
+    ankete_ustvarjene....................: 15487   22.444621/s
+    glasovi_poskusi......................: 293302  425.069557/s
+    glasovi_potrjeni.....................: 241867  350.527097/s
+    potrditve_potrjene...................: 12272   17.785264/s
+    predlogi_potrjeni....................: 24651   35.725599/s
+
+    HTTP
+    http_req_duration....................: avg=121.01ms min=0s       med=4ms      p(90)=405.41ms p(95)=529.12ms p(99)=1.21s   max=3.02s 
+      { expected_response:true }.........: avg=134.23ms min=96.27µs  med=3.9ms    p(90)=424.88ms p(95)=582.75ms p(99)=1.26s   max=3.02s 
+      { scenario:okrevanje,vrsta:api }...: avg=5.34ms   min=745.18µs med=3.72ms   p(90)=11.24ms  p(95)=13.31ms  p(99)=17.95ms max=75.8ms
+    http_req_failed......................: 13.52%  136756 out of 1011122
+      { scenario:okrevanje }.............: 0.00%   0 out of 18306
+    http_reqs............................: 1011122 1465.374189/s
+
+    EXECUTION
+    dropped_iterations...................: 1176    1.704325/s
+    iteration_duration...................: avg=425.72ms min=973.26µs med=256.86ms p(90)=1.19s    p(95)=1.61s    p(99)=2.18s   max=5.36s 
+    iterations...........................: 335972  486.909292/s
+    vus..................................: 0       min=0                 max=972 
+    vus_max..............................: 1029    min=200               max=1029
+
+    NETWORK
+    data_received........................: 1.4 GB  2.0 MB/s
+    data_sent............................: 266 MB  386 kB/s
+
+stres     ✓ [ 100% ] 0950/1029 VUs  9m20s  1200.00 iters/s
+okrevanje ✓ [ 100% ] 000/100 VUs    2m0s   50.00 iters/s
+
+# Opozorila k6 (strnjeno, število ponovitev):
+#    136522 × Request Failed

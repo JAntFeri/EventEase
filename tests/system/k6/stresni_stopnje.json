@@ -1,0 +1,7 @@
+{
+  "opis": "Stopnje stresnega testa ST-02 (iteracije na sekundo). Vsaka stopnja: naraščanje + vzdrževanje. Bere jih k6 skripta in analiza.",
+  "naras_s": 20,
+  "vzdrzevanje_s": 60,
+  "stopnje": [100, 200, 400, 600, 800, 1000, 1200],
+  "okrevanje": { "hitrost": 50, "trajanje_s": 120, "premor_s": 10 }
+}

@@ -21,7 +21,7 @@ Vseh **18 testnih primerov** iz specifikacije smo avtomatizirali z orodjem **Pla
 |---|---|---|
 | Izhodišče (`c4690e2`) | 18 / 18 po pričakovanju: 11 uspešnih, 7 pričakovano neuspešnih (znane napake) | ✅ [zagon 42908628075](https://github.com/JAntFeri/EventEase/actions/runs/42908628075) |
 | Namerni napaki (`c2ab642`) | **2 nepričakovano neuspešna** (TC-01-02, TC-03-07), izhodna koda 1 | ❌ [zagon 42910750227](https://github.com/JAntFeri/EventEase/actions/runs/42910750227) |
-| Po razveljavitvi | 18 / 18 po pričakovanju | ✅ ZAGON_3 |
+| Po razveljavitvi (`e8b81d2`) | 18 / 18 po pričakovanju | ✅ [zagon 42912163206](https://github.com/JAntFeri/EventEase/actions/runs/42912163206) |
 
 Rezultati avtomatizirane izvedbe se ujemajo z ročno vodeno izvedbo iz prejšnje naloge: isti primeri uspejo in isti padejo iz istih razlogov. Obe namerno vneseni napaki sta bili zaznani, lokalno in v cevovodu.
 
@@ -210,7 +210,7 @@ Ostalih 16 primerov se ni spremenilo, tudi sedem pričakovano neuspešnih ne. Na
 
 V CI ([zagon 42910750227](https://github.com/JAntFeri/EventEase/actions/runs/42910750227)): posla »Frontend« in »Backend (Zig)« sta uspela, ker napaki ne pokvarita gradnje, linta ali testov enot. Posel »Docker + API smoke« je **padel na koraku »Funkcionalni testi (Playwright)« z izhodno kodo 1**. Tudi smoke test (`scripts/ci-smoke-test.sh`) je uspel, ker preverja samo srečno pot. Napaki je torej zaznal samo novi nabor. Koraka »Povzetek« in »Naloži poročilo Playwright« sta se izvedla tudi po neuspehu (`if: always()`), zato sta na strani zagona tabela primerov in artefakt `playwright-porocilo` s posnetkom zaslona in sledjo neuspelih primerov.
 
-Po razveljavitvi: RAZVELJAVITEV_REZULTAT
+Po razveljavitvi (`e8b81d2`, datoteki `CreateEventPage.jsx` in `routes.zig` sta enaki kot v `c4690e2`): lokalno **18 / 18 po pričakovanju, izhodna koda 0** ([`3_razveljavitev.txt`](dokazi/avtomatizacija/3_razveljavitev.txt)), v CI [zagon 42912163206](https://github.com/JAntFeri/EventEase/actions/runs/42912163206) **uspešen** (vsi trije posli).
 
 ---
 

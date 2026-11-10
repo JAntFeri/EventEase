@@ -548,7 +548,7 @@ pub fn getAdminPoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
     const poll_id_str, const title, const description, const organizer_email, const is_finalized, const final_slot_id_str, const share_token_str = blk: {
         var row = conn.row(
             \\ SELECT id::text, title, description, organizer_email, is_finalized, final_slot_id::text, share_token::text
-            \\ FROM polls WHERE admin_token = $1 OR share_token = $1 -- NAMERNA NAPAKA (naloga 5)
+            \\ FROM polls WHERE admin_token = $1
         , .{admin_token_hex}) catch |err| {
             if (conn.err) |pg_err| std.log.err("getAdminPoll [polls SELECT] PG error: {s}", .{pg_err.message});
             return err;
@@ -1008,7 +1008,7 @@ pub fn finalizePoll(app: *App, req: *httpz.Request, res: *httpz.Response) !void 
     const poll_id_str, const already_finalized, const organizer_email, const poll_title = blk: {
         var row = (conn.row(
             \\ SELECT id::text, is_finalized, organizer_email, title
-            \\ FROM polls WHERE admin_token = $1 OR share_token = $1 -- NAMERNA NAPAKA (naloga 5)
+            \\ FROM polls WHERE admin_token = $1
         , .{admin_token_hex}) catch |err| {
             if (conn.err) |pg_err| std.log.err("finalizePoll [poll lookup] PG error: {s}", .{pg_err.message});
             return err;

@@ -94,11 +94,10 @@ export default function CreateEventWizard({ onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // NAMERNA NAPAKA (naloga 5): preverjanje naslova odstranjeno, pričakovan neuspeh TC-01-02.
-    // if (!formData.title) {
-    //   setNotice({ type: "error", message: "Prosimo, vnesite naslov dogodka." });
-    //   return;
-    // }
+    if (!formData.title) {
+      setNotice({ type: "error", message: "Prosimo, vnesite naslov dogodka." });
+      return;
+    }
     if (!formData.organizer_email) {
       setNotice({
         type: "error",

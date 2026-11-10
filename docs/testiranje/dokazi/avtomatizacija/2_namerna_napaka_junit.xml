@@ -1,0 +1,257 @@
+<testsuites id="" name="" tests="18" failures="2" skipped="0" errors="0" time="14.967324999999999">
+<testsuite name="ts01-ustvarjanje.spec.js" timestamp="2026-11-10T21:55:48.781Z" hostname="chromium" tests="5" failures="1" skipped="0" time="4.804" errors="0">
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-01 Uspešno ustvarjanje ankete z dvema terminoma (UI)" classname="ts01-ustvarjanje.spec.js" time="1.221">
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-02 Zavrnitev ankete brez naslova (UI)" classname="ts01-ustvarjanje.spec.js" time="1.308">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/test-failed-1.png]]
+
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/error-context.md]]
+
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/trace.zip]]
+]]>
+</system-out>
+<failure message="obvestilo aplikacije ali atribut required" type="expect.toBe">
+<![CDATA[  [chromium] › ts01-ustvarjanje.spec.js:56:3 › TS-01 Ustvarjanje ankete › TC-01-02 Zavrnitev ankete brez naslova (UI) 
+
+    Error: obvestilo aplikacije ali atribut required
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      65 |     await test.step("Obvestilo »Prosimo, vnesite naslov dogodka.« ali opozorilo brskalnika", async () => {
+      66 |       const msg = await page.getByText("Prosimo, vnesite naslov dogodka.").count();
+    > 67 |       expect.soft(msg > 0 || required, "obvestilo aplikacije ali atribut required").toBe(true);
+         |                                                                                     ^
+      68 |     });
+      69 |     await test.step("Zahteva ni poslana (0 POST)", () => {
+      70 |       expect.soft(posts).toHaveLength(0);
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts01-ustvarjanje.spec.js:67:85
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts01-ustvarjanje.spec.js:65:5
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"body": "{\"title\":\"\",\"description\":\"\",\"organizer_email\":\"organizator@primer.si\",\"time_slots\":[{\"start_time\":\"2026-12-10T12:00:00\",\"end_time\":\"2026-12-10T13:00:00\"}],\"tasks\":[]}", "url": "http://localhost:8080/api/polls"}]
+
+      68 |     });
+      69 |     await test.step("Zahteva ni poslana (0 POST)", () => {
+    > 70 |       expect.soft(posts).toHaveLength(0);
+         |                          ^
+      71 |     });
+      72 |     await evidence(page, "TC-01-02_brez_naslova");
+      73 |   });
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts01-ustvarjanje.spec.js:70:26
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts01-ustvarjanje.spec.js:69:5
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/artefakti/ts01-ustvarjanje-TS-01-Ust-074b6-tev-ankete-brez-naslova-UI--chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-03 Zavrnitev ankete brez izbranega termina (UI)" classname="ts01-ustvarjanje.spec.js" time="0.814">
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-04 Robna vrednost: termin, ki se začne ob 23:30 (UI)" classname="ts01-ustvarjanje.spec.js" time="1.307">
+<properties>
+<property name="znana napaka" value="INC-01">
+</property>
+<property name="fail" value="Znana napaka: INC-01 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-32ee7-in-ki-se-začne-ob-23-30-UI--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-05 Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)" classname="ts01-ustvarjanje.spec.js" time="0.154">
+<properties>
+<property name="znana napaka" value="INC-02">
+</property>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="znana napaka" value="INC-04">
+</property>
+<property name="fail" value="Znana napaka: INC-02, INC-03, INC-04 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-5eb19-vhodov-pri-ustvarjanju-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ts02-glasovanje.spec.js" timestamp="2026-11-10T21:55:48.781Z" hostname="chromium" tests="6" failures="0" skipped="0" time="3.541" errors="0">
+<testcase name="TS-02 Glasovanje › TC-02-01 Oddaja glasu »Da« in »Če bo potrebno« (UI)" classname="ts02-glasovanje.spec.js" time="0.956">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-02 Zavrnitev glasu brez imena (UI)" classname="ts02-glasovanje.spec.js" time="1.146">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-03 Sprememba glasu z istim imenom (API)" classname="ts02-glasovanje.spec.js" time="0.078">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-04 Zavrnitev glasu za termin druge ankete (API)" classname="ts02-glasovanje.spec.js" time="0.072">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-05 Zavrnitev neveljavnega statusa glasu (API)" classname="ts02-glasovanje.spec.js" time="0.068">
+<properties>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="fail" value="Znana napaka: INC-03 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts02-glasovanje-TS-02-Glas-7f820-ljavnega-statusa-glasu-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-06 Glasovanje z neobstoječim ali neveljavnim žetonom (API)" classname="ts02-glasovanje.spec.js" time="1.221">
+<properties>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="fail" value="Znana napaka: INC-03 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts02-glasovanje-TS-02-Glas-70dd7-li-neveljavnim-žetonom-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ts03-potrditev.spec.js" timestamp="2026-11-10T21:55:48.781Z" hostname="chromium" tests="7" failures="1" skipped="0" time="4.61" errors="0">
+<testcase name="TS-03 Potrditev termina › TC-03-01 Potrditev zmagovalnega termina (UI)" classname="ts03-potrditev.spec.js" time="2.661">
+<properties>
+<property name="opomba" value="DISABLE_EMAILS=true: prejem e-pošte in .ics (FZ-19) ni preverjen.">
+</property>
+</properties>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-02 Zavrnitev potrditve brez izbranega termina (UI)" classname="ts03-potrditev.spec.js" time="0.473">
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-03 Ponovna finalizacija zaključene ankete (API)" classname="ts03-potrditev.spec.js" time="0.07">
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-04 Glasovanje po zaključku ankete (API)" classname="ts03-potrditev.spec.js" time="0.074">
+<properties>
+<property name="znana napaka" value="INC-05">
+</property>
+<property name="fail" value="Znana napaka: INC-05 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-1aa46-je-po-zaključku-ankete-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-05 Finalizacija s terminom, ki ne pripada anketi (API)" classname="ts03-potrditev.spec.js" time="1.217">
+<properties>
+<property name="znana napaka" value="INC-06">
+</property>
+<property name="fail" value="Znana napaka: INC-06 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-a2741-m-ki-ne-pripada-anketi-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-06 Finalizacija z neobstoječim terminom (API)" classname="ts03-potrditev.spec.js" time="0.061">
+<properties>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="fail" value="Znana napaka: INC-03 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-30807--neobstoječim-terminom-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-07 Žeton za udeležence na skrbniški poti (API)" classname="ts03-potrditev.spec.js" time="0.054">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-52982-ence-na-skrbniški-poti-API--chromium/error-context.md]]
+
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-52982-ence-na-skrbniški-poti-API--chromium/trace.zip]]
+]]>
+</system-out>
+<failure message="{&quot;success&quot;:true}" type="expect.toBe">
+<![CDATA[  [chromium] › ts03-potrditev.spec.js:137:3 › TS-03 Potrditev termina › TC-03-07 Žeton za udeležence na skrbniški poti (API) 
+
+    Error: {"success":true}
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 404
+    Received: 200
+
+      140 |     await test.step("POST /admin/<share_token>/finalize vrne HTTP 404", async () => {
+      141 |       const r = await api("POST", `/api/polls/admin/${p.share_token}/finalize`, { final_slot_id: p.slots[0].id });
+    > 142 |       expect.soft(r.status, r.text).toBe(404);
+          |                                     ^
+      143 |     });
+      144 |     await test.step("GET /admin/<share_token> vrne HTTP 404", async () => {
+      145 |       const g = await api("GET", `/api/polls/admin/${p.share_token}`);
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts03-potrditev.spec.js:142:37
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts03-potrditev.spec.js:140:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 404
+    Received: 200
+
+      144 |     await test.step("GET /admin/<share_token> vrne HTTP 404", async () => {
+      145 |       const g = await api("GET", `/api/polls/admin/${p.share_token}`);
+    > 146 |       expect.soft(g.status).toBe(404);
+          |                             ^
+      147 |     });
+      148 |     await test.step("Anketa ostane odprta", () => {
+      149 |       expect.soft(pollState(p.admin_token)).toBe("f|-");
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts03-potrditev.spec.js:146:29
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts03-potrditev.spec.js:144:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "f|-"
+    Received: "t|2b6142ca-c4c5-4d92-bfe2-10f8ae34c7a8"
+
+      147 |     });
+      148 |     await test.step("Anketa ostane odprta", () => {
+    > 149 |       expect.soft(pollState(p.admin_token)).toBe("f|-");
+          |                                             ^
+      150 |     });
+      151 |   });
+      152 | });
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts03-potrditev.spec.js:149:45
+        at /home/jurea/Documents/Šola/Praktikum2/tests/e2e/specs/ts03-potrditev.spec.js:148:5
+
+    Error Context: ../test-results/artefakti/ts03-potrditev-TS-03-Potrd-52982-ence-na-skrbniški-poti-API--chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/artefakti/ts03-potrditev-TS-03-Potrd-52982-ence-na-skrbniški-poti-API--chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/artefakti/ts03-potrditev-TS-03-Potrd-52982-ence-na-skrbniški-poti-API--chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+</testcase>
+</testsuite>
+</testsuites>

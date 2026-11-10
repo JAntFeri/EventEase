@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, jureQA]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   frontend:
@@ -90,6 +91,55 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y jq
 
       - run: bash scripts/ci-smoke-test.sh http://localhost:8080
+
+      # Funkcionalni testi (Playwright Test, docs/testiranje/Porocilo_avtomatizacije.md).
+      # Testi s pričakovano napako (znane napake INC-xx) cevovoda ne ustavijo; vsak drug neuspeh ga.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Namesti Playwright
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Funkcionalni testi (Playwright)
+        working-directory: tests/e2e
+        env:
+          CI: "true"
+          BASE_URL: http://localhost:8080
+          TEST_DATABASE_URL: postgresql://admin:admin@localhost:5432/eventeasedb
+        run: npx playwright test
+
+      - name: Povzetek funkcionalnih testov
+        if: always()
+        working-directory: tests/e2e
+        run: |
+          [ -f test-results/rezultati.json ] || exit 0
+          jq -r '
+            def rows: .suites[] | (.suites // [])[] | .specs[] | . as $s | .tests[0] as $t |
+              "| \($s.title) | \($t.results[-1].status) | \(if $t.expectedStatus == "failed" then "pričakovano neuspešen (" + ([$t.annotations[] | select(.type == "znana napaka") | .description] | join(", ")) + ")" else "mora uspeti" end) | \(if $s.ok then "✅" else "❌" end) |";
+            "## Funkcionalni testi (Playwright)",
+            "",
+            "Po pričakovanju: \(.stats.expected), nepričakovano: \(.stats.unexpected), preskočenih: \(.stats.skipped)",
+            "",
+            "| Primer | Izid | Pričakovanje | OK |",
+            "|---|---|---|---|",
+            rows
+          ' test-results/rezultati.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Naloži poročilo Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-porocilo
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+          if-no-files-found: warn
 
       - if: always()
         run: docker compose down -v

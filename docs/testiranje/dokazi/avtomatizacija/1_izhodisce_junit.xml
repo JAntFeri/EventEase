@@ -1,0 +1,129 @@
+<testsuites id="" name="" tests="18" failures="0" skipped="0" errors="0" time="12.935643">
+<testsuite name="ts01-ustvarjanje.spec.js" timestamp="2026-11-10T21:45:12.865Z" hostname="chromium" tests="5" failures="0" skipped="0" time="4.167" errors="0">
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-01 Uspešno ustvarjanje ankete z dvema terminoma (UI)" classname="ts01-ustvarjanje.spec.js" time="0.997">
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-02 Zavrnitev ankete brez naslova (UI)" classname="ts01-ustvarjanje.spec.js" time="1.172">
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-03 Zavrnitev ankete brez izbranega termina (UI)" classname="ts01-ustvarjanje.spec.js" time="0.611">
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-04 Robna vrednost: termin, ki se začne ob 23:30 (UI)" classname="ts01-ustvarjanje.spec.js" time="1.227">
+<properties>
+<property name="znana napaka" value="INC-01">
+</property>
+<property name="fail" value="Znana napaka: INC-01 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-32ee7-in-ki-se-začne-ob-23-30-UI--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-01 Ustvarjanje ankete › TC-01-05 Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)" classname="ts01-ustvarjanje.spec.js" time="0.16">
+<properties>
+<property name="znana napaka" value="INC-02">
+</property>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="znana napaka" value="INC-04">
+</property>
+<property name="fail" value="Znana napaka: INC-02, INC-03, INC-04 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts01-ustvarjanje-TS-01-Ust-5eb19-vhodov-pri-ustvarjanju-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ts02-glasovanje.spec.js" timestamp="2026-11-10T21:45:12.865Z" hostname="chromium" tests="6" failures="0" skipped="0" time="3.304" errors="0">
+<testcase name="TS-02 Glasovanje › TC-02-01 Oddaja glasu »Da« in »Če bo potrebno« (UI)" classname="ts02-glasovanje.spec.js" time="0.825">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-02 Zavrnitev glasu brez imena (UI)" classname="ts02-glasovanje.spec.js" time="1.093">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-03 Sprememba glasu z istim imenom (API)" classname="ts02-glasovanje.spec.js" time="0.078">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-04 Zavrnitev glasu za termin druge ankete (API)" classname="ts02-glasovanje.spec.js" time="0.07">
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-05 Zavrnitev neveljavnega statusa glasu (API)" classname="ts02-glasovanje.spec.js" time="0.075">
+<properties>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="fail" value="Znana napaka: INC-03 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts02-glasovanje-TS-02-Glas-7f820-ljavnega-statusa-glasu-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-02 Glasovanje › TC-02-06 Glasovanje z neobstoječim ali neveljavnim žetonom (API)" classname="ts02-glasovanje.spec.js" time="1.163">
+<properties>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="fail" value="Znana napaka: INC-03 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts02-glasovanje-TS-02-Glas-70dd7-li-neveljavnim-žetonom-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="ts03-potrditev.spec.js" timestamp="2026-11-10T21:45:12.865Z" hostname="chromium" tests="7" failures="0" skipped="0" time="4.353" errors="0">
+<testcase name="TS-03 Potrditev termina › TC-03-01 Potrditev zmagovalnega termina (UI)" classname="ts03-potrditev.spec.js" time="2.525">
+<properties>
+<property name="opomba" value="DISABLE_EMAILS=true: prejem e-pošte in .ics (FZ-19) ni preverjen.">
+</property>
+</properties>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-02 Zavrnitev potrditve brez izbranega termina (UI)" classname="ts03-potrditev.spec.js" time="0.404">
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-03 Ponovna finalizacija zaključene ankete (API)" classname="ts03-potrditev.spec.js" time="0.079">
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-04 Glasovanje po zaključku ankete (API)" classname="ts03-potrditev.spec.js" time="0.072">
+<properties>
+<property name="znana napaka" value="INC-05">
+</property>
+<property name="fail" value="Znana napaka: INC-05 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-1aa46-je-po-zaključku-ankete-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-05 Finalizacija s terminom, ki ne pripada anketi (API)" classname="ts03-potrditev.spec.js" time="1.171">
+<properties>
+<property name="znana napaka" value="INC-06">
+</property>
+<property name="fail" value="Znana napaka: INC-06 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-a2741-m-ki-ne-pripada-anketi-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-06 Finalizacija z neobstoječim terminom (API)" classname="ts03-potrditev.spec.js" time="0.048">
+<properties>
+<property name="znana napaka" value="INC-03">
+</property>
+<property name="fail" value="Znana napaka: INC-03 (docs/testiranje/Porocilo_testiranja.md)">
+</property>
+</properties>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artefakti/ts03-potrditev-TS-03-Potrd-30807--neobstoječim-terminom-API--chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TS-03 Potrditev termina › TC-03-07 Žeton za udeležence na skrbniški poti (API)" classname="ts03-potrditev.spec.js" time="0.054">
+</testcase>
+</testsuite>
+</testsuites>

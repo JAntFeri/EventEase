@@ -1,0 +1,14 @@
+{
+  "name": "eventease-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Avtomatizirani funkcionalni testi EventEase (Playwright Test)",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report playwright-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

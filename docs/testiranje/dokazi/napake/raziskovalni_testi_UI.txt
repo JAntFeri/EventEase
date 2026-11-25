@@ -1,0 +1,13 @@
+# Raziskovalni testi UI (Playwright, začasna specifikacija), 25. 11. 2026
+# Chromium 149.0.7827.55, Firefox 151.0; backend ReleaseFast fee8af9 + Vite; PostgreSQL 16 (UTC); ura brskalnika nastavljena s page.clock, pas Europe/Ljubljana
+
+[chromium] E1 POST /api/polls: 201; v bazi naslov=""
+[chromium] E3 ura brskalnika 15. 12. 2026 20:00; termin 15. 12. 08:00 -> POST 201; v bazi: 2026-12-15 08:00:00+00
+[chromium] E4 elementi, ki dobijo fokus s Tab: BUTTON:Potrdi izbran termin in o | BODY:SKRBNIŠKI POGLED E4 tipk; kartica termina fokusljiva: false
+[firefox] E1 POST /api/polls: 201; v bazi naslov=""
+[firefox] E3 ura brskalnika 15. 12. 2026 20:00; termin 15. 12. 08:00 -> POST 201; v bazi: 2026-12-15 08:00:00+00
+[firefox] E4 elementi, ki dobijo fokus s Tab: BUTTON:Potrdi izbran termin in o; kartica termina fokusljiva: false
+[chromium] E2 brskalnik 2026-12-01T00:30:00+01:00 (Ljubljana), prikazan 'November 2026': 29. 11. izbirljiv=false, 30. 11. (včeraj) izbirljiv=true
+[chromium] E2 brskalnik 2026-12-01T01:30:00+01:00 (Ljubljana), prikazan 'November 2026': 29. 11. izbirljiv=false, 30. 11. (včeraj) izbirljiv=false
+[firefox] E2 brskalnik 2026-12-01T00:30:00+01:00 (Ljubljana), prikazan 'November 2026': 29. 11. izbirljiv=false, 30. 11. (včeraj) izbirljiv=true
+[firefox] E2 brskalnik 2026-12-01T01:30:00+01:00 (Ljubljana), prikazan 'November 2026': 29. 11. izbirljiv=false, 30. 11. (včeraj) izbirljiv=false

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Lažni curl za preverjanje e-pošte: shrani telo zahteve, ki bi šla na Resend API, v $MAIL_OUT in vrne 200.
+# Ničesar ne pošlje. Uporaba: PATH=<ta mapa>:$PATH MAIL_OUT=<mapa> DISABLE_EMAILS=false RESEND_API_KEY=x logic
+OUT=${MAIL_OUT:?}; f="$OUT/$(date +%s%N)_$$.json"; prev=""; outf=""
+for a in "$@"; do
+  case "$prev" in
+    -d|--data-binary) if [[ "$a" == @* ]]; then cat "${a#@}" > "$f"; else printf '%s' "$a" > "$f"; fi;;
+    -o) outf="$a";;
+  esac; prev="$a"
+done
+[ -n "$outf" ] && [ "$outf" != /dev/null ] && echo '{}' > "$outf"
+printf 200

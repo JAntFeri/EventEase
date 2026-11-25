@@ -1,0 +1,13 @@
+# EE-N02 – odprti posrednik e-pošte /api/polls/share-email; 25. 11. 2026; lažni curl (nič ni poslano)
+
+{"success":true} [HTTP 200]
+zajetih e-pošt: 50
+primer: ZA zrtev1@primer.si | OD EventEase <onboarding@resend.dev> | ZADEVA Vabilo: Vaš račun bo zaklenjen – potrdite podatke
+  Pozdravljeni!
+Vabljeni ste k glasovanju za termin dogodka "Vaš račun bo zaklenjen – potrdite podatke".
+Glasujte tukaj:
+https://zlonamerna-stran.example/prijava
+Glasovanje je hitro in enostavno.
+Lep pozdrav,
+Ekipa EventEase
+    EventEase &mdash; Enostavno usklajevanje terminov

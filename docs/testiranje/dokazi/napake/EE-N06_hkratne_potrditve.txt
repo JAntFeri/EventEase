@@ -1,0 +1,23 @@
+# EE-N06 – 10 hkratnih potrditev iste ankete z različnimi termini, 15 ponovitev
+# 25. 11. 2026; backend ReleaseFast fee8af9, e-pošta izklopljena; PostgreSQL 16 (UTC). Pričakovano v vsaki ponovitvi: 1× 200, 9× 409
+
+ponovitev 1:  1 200; 9 409;
+ponovitev 2:  1 200; 9 409;
+ponovitev 3:  2 200; 8 409;
+ponovitev 4:  1 200; 9 409;
+ponovitev 5:  1 200; 9 409;
+ponovitev 6:  2 200; 8 409;
+ponovitev 7:  1 200; 9 409;
+ponovitev 8:  1 200; 9 409;
+ponovitev 9:  1 200; 9 409;
+ponovitev 10:  1 200; 9 409;
+ponovitev 11:  1 200; 9 409;
+ponovitev 12:  1 200; 9 409;
+ponovitev 13:  1 200; 9 409;
+ponovitev 14:  5 200; 5 409;
+ponovitev 15:  5 200; 5 409;
+
+proces logic po testu: ŽIV
+
+--- stanje v bazi za zadnjo anketo: final_slot_id je zadnji zapisani termin, ki ni nujno tisti, o katerem so bili obveščeni udeleženci
+Potrditev 15|t|2026-12-15 10:00:00+00

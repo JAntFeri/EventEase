@@ -1,0 +1,42 @@
+# Zagon zbirke Playwright Test (tests/e2e) – naloga 6, 25. 11. 2026
+# Okolje: backend Zig ReleaseFast (fee8af9) + Vite :8080, PostgreSQL 16 v Dockerju (127.0.0.1:5433, TimeZone=UTC), Chromium 149.0.7827.55 in Firefox 151.0, Debian 13
+# 'expected failed' = znana napaka (test.fail), pričakovano neuspešen
+
+chromium	TC-01-01 Uspešno ustvarjanje ankete z dvema terminoma (UI)	expected/passed	
+chromium	TC-01-02 Zavrnitev ankete brez naslova (UI)	expected/passed	
+chromium	TC-01-03 Zavrnitev ankete brez izbranega termina (UI)	expected/passed	
+chromium	TC-01-04 Robna vrednost: termin, ki se začne ob 23:30 (UI)	expected/failed	INC-01
+chromium	TC-01-05 Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)	expected/failed	INC-02,INC-03,INC-04
+chromium	TC-02-01 Oddaja glasu »Da« in »Če bo potrebno« (UI)	expected/passed	
+chromium	TC-02-02 Zavrnitev glasu brez imena (UI)	expected/passed	
+chromium	TC-02-03 Sprememba glasu z istim imenom (API)	expected/passed	
+chromium	TC-02-04 Zavrnitev glasu za termin druge ankete (API)	expected/passed	
+chromium	TC-02-05 Zavrnitev neveljavnega statusa glasu (API)	expected/failed	INC-03
+chromium	TC-02-06 Glasovanje z neobstoječim ali neveljavnim žetonom (API)	expected/failed	INC-03
+chromium	TC-03-01 Potrditev zmagovalnega termina (UI)	expected/passed	
+chromium	TC-03-02 Zavrnitev potrditve brez izbranega termina (UI)	expected/passed	
+chromium	TC-03-03 Ponovna finalizacija zaključene ankete (API)	expected/passed	
+chromium	TC-03-04 Glasovanje po zaključku ankete (API)	expected/failed	INC-05
+chromium	TC-03-05 Finalizacija s terminom, ki ne pripada anketi (API)	expected/failed	INC-06
+chromium	TC-03-06 Finalizacija z neobstoječim terminom (API)	expected/failed	INC-03
+chromium	TC-03-07 Žeton za udeležence na skrbniški poti (API)	expected/passed	
+firefox	TC-01-01 Uspešno ustvarjanje ankete z dvema terminoma (UI)	expected/passed	
+firefox	TC-01-02 Zavrnitev ankete brez naslova (UI)	expected/passed	
+firefox	TC-01-03 Zavrnitev ankete brez izbranega termina (UI)	expected/passed	
+firefox	TC-01-04 Robna vrednost: termin, ki se začne ob 23:30 (UI)	expected/failed	INC-01
+firefox	TC-01-05 Strežniška validacija neveljavnih vhodov pri ustvarjanju (API)	expected/failed	INC-02,INC-03,INC-04
+firefox	TC-02-01 Oddaja glasu »Da« in »Če bo potrebno« (UI)	expected/passed	
+firefox	TC-02-02 Zavrnitev glasu brez imena (UI)	expected/passed	
+firefox	TC-02-03 Sprememba glasu z istim imenom (API)	expected/passed	
+firefox	TC-02-04 Zavrnitev glasu za termin druge ankete (API)	expected/passed	
+firefox	TC-02-05 Zavrnitev neveljavnega statusa glasu (API)	expected/failed	INC-03
+firefox	TC-02-06 Glasovanje z neobstoječim ali neveljavnim žetonom (API)	expected/failed	INC-03
+firefox	TC-03-01 Potrditev zmagovalnega termina (UI)	expected/passed	
+firefox	TC-03-02 Zavrnitev potrditve brez izbranega termina (UI)	expected/passed	
+firefox	TC-03-03 Ponovna finalizacija zaključene ankete (API)	expected/passed	
+firefox	TC-03-04 Glasovanje po zaključku ankete (API)	expected/failed	INC-05
+firefox	TC-03-05 Finalizacija s terminom, ki ne pripada anketi (API)	expected/failed	INC-06
+firefox	TC-03-06 Finalizacija z neobstoječim terminom (API)	expected/failed	INC-03
+firefox	TC-03-07 Žeton za udeležence na skrbniški poti (API)	expected/passed	
+
+  36 passed (1.3m)

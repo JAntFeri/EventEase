@@ -1,0 +1,33 @@
+# EE-N05 – branje ankete s 3 glasovi; 25. 11. 2026; baza PostgreSQL 16 (UTC)
+
+## 1) Debug (zig build, kot 'zig build run' v CLAUDE.md/README)
+glas Ana: 201
+glas Bojan: 201
+glas Cene: 201
+--- GET /share:
+ [HTTP 000]
+
+--- GET /admin:
+[HTTP 000]
+--- baza:
+Ana|yes,yes
+Bojan|no,no
+Cene|if_need_be,no
+proces logic: SESUT
+--- dnevnik strežnika (izvleček):
+General protection exception (no address available)
+routes.zig:526:17: 0x134a54c in getPoll (main.zig)
+
+## 2) ReleaseFast (kot v Dockerfile)
+glas Ana: 201
+glas Bojan: 201
+glas Cene: 201
+--- GET /share:
+{"id":"b3fc2470-b478-4aae-8969-d62932ca393c","title":"Branje glasov","description":"","organizer_email":"o@primer.si","is_finalized":false,"final_slot_id":null,"time_slots":[{"id":"0fe93015-7fec-4c4d-9de2-bb492d28ff2b","start_time":"2026-12-20 10:00:00+00","end_time":"2026-12-20 11:00:00+00"},{"id":"932d852c-90f6-41a9-8845-6e1f1426ddfc","start_time":"2026-12-21 10:00:00+00","end_time":"2026-12-21 
+--- GET /admin:
+[HTTP 200]
+--- baza:
+Ana|yes,yes
+Bojan|no,no
+Cene|if_need_be,no
+proces logic: ŽIV

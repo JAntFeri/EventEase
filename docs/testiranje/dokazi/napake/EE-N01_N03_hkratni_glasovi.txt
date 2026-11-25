@@ -1,0 +1,116 @@
+# EE-N01, EE-N03 – 10 hkratnih glasov v 10 različnih anketah, e-pošta vklopljena (lažni curl, nič ni poslano)
+# 25. 11. 2026; backend fee8af9; PostgreSQL 16 (UTC). Pred vsako ponovitvijo nov proces logic; po njej preverimo, ali isti PID še teče.
+
+## gradnja: rf (ReleaseFast – kot v Dockerfile)
+-- ponovitev 1 (pid 156191)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 3, organizatorjev s pravilnim obvestilom: 0/10, pokvarjenih JSON: 1
+   prejemniki:  2 org1@primer.si;
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 2 (pid 156495)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 2, organizatorjev s pravilnim obvestilom: 2/10, pokvarjenih JSON: 0
+   prejemniki:  1 org2@primer.si; 1 org6@primer.si;
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 3 (pid 156767)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 4, organizatorjev s pravilnim obvestilom: 0/10, pokvarjenih JSON: 1
+   prejemniki:  3 org6@primer.si;
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 4 (pid 157026)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 3, organizatorjev s pravilnim obvestilom: 0/10, pokvarjenih JSON: 1
+   prejemniki:  2 org2@primer.si;
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 5 (pid 157322)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 3, organizatorjev s pravilnim obvestilom: 1/10, pokvarjenih JSON: 0
+   prejemniki:  1 org1@primer.si; 2 org8@primer.si;
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 6 (pid 157577)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 1, organizatorjev s pravilnim obvestilom: 0/10, pokvarjenih JSON: 1
+   prejemniki: 
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 7 (pid 157845)
+   odzivi:  9 000; 1 201;
+   zajetih e-pošt: 4, organizatorjev s pravilnim obvestilom: 0/10, pokvarjenih JSON: 1
+   prejemniki:  3 org4@primer.si;
+   proces: SESUT (Signal: 11 (SEGV)) 
+-- ponovitev 8 (pid 158108)
+   odzivi:  10 201;
+   zajetih e-pošt: 10, organizatorjev s pravilnim obvestilom: 3/10, pokvarjenih JSON: 0
+   prejemniki:  1 org10@primer.si; 2 org2@primer.si; 1 org6@primer.si; 2 org7@primer.si; 1 org8@primer.si; 3 org9@primer.si;
+   proces: ŽIV
+== rf: sesutij 7/8
+
+## gradnja: rs (ReleaseSafe – z izpisom sklada klicev)
+-- ponovitev 1 (pid 158407)
+   odzivi:  10 201;
+   zajetih e-pošt: 10, organizatorjev s pravilnim obvestilom: 1/10, pokvarjenih JSON: 2
+   prejemniki:  3 org2@primer.si; 1 org4@primer.si; 4 org6@primer.si;
+   proces: ŽIV
+-- ponovitev 2 (pid 158709)
+   odzivi:  1 000; 9 201;
+   zajetih e-pošt: 9, organizatorjev s pravilnim obvestilom: 4/10, pokvarjenih JSON: 0
+   prejemniki:  1 org10@primer.si; 1 org1@primer.si; 2 org4@primer.si; 1 org6@primer.si; 1 org8@primer.si; 3 org9@primer.si;
+   proces: SESUT (Signal: 6 (ABRT)) Segmentation fault at address 0x2f8
+      worker.zig:1670:40: 0x1091433 in getState (logic)
+-- ponovitev 3 (pid 159036)
+   odzivi:  9 201; 1 500;
+   zajetih e-pošt: 9, organizatorjev s pravilnim obvestilom: 2/10, pokvarjenih JSON: 1
+   prejemniki:  3 org10@primer.si; 1 org3@primer.si; 1 org4@primer.si; 3 org8@primer.si;
+   proces: ŽIV
+-- ponovitev 4 (pid 159333)
+   odzivi:  10 201;
+   zajetih e-pošt: 10, organizatorjev s pravilnim obvestilom: 3/10, pokvarjenih JSON: 1
+   prejemniki:  1 org1@primer.si; 2 org2@primer.si; 4 org4@primer.si; 1 org7@primer.si; 1 org9@primer.si;
+   proces: ŽIV
+-- ponovitev 5 (pid 159652)
+   odzivi:  10 201;
+   zajetih e-pošt: 10, organizatorjev s pravilnim obvestilom: 2/10, pokvarjenih JSON: 0
+   prejemniki:  4 org1@primer.si; 1 org2@primer.si; 1 org3@primer.si; 4 org7@primer.si;
+   proces: ŽIV
+-- ponovitev 6 (pid 159966)
+   odzivi:  10 201;
+   zajetih e-pošt: 10, organizatorjev s pravilnim obvestilom: 2/10, pokvarjenih JSON: 1
+   prejemniki:  4 org10@primer.si; 3 org2@primer.si; 1 org5@primer.si; 1 org9@primer.si;
+   proces: ŽIV
+-- ponovitev 7 (pid 160289)
+   odzivi:  10 201;
+   zajetih e-pošt: 10, organizatorjev s pravilnim obvestilom: 1/10, pokvarjenih JSON: 1
+   prejemniki:  4 org1@primer.si; 1 org5@primer.si; 4 org8@primer.si;
+   proces: ŽIV
+-- ponovitev 8 (pid 160601)
+   odzivi:  9 201; 1 500;
+   zajetih e-pošt: 9, organizatorjev s pravilnim obvestilom: 1/10, pokvarjenih JSON: 1
+   prejemniki:  4 org2@primer.si; 1 org3@primer.si; 3 org5@primer.si;
+   proces: ŽIV
+== rs: sesutij 1/8
+
+## kontrola: gradnja rf (ReleaseFast), e-pošta IZKLOPLJENA (DISABLE_EMAILS=true), enaka obremenitev
+-- ponovitev 1 (pid 164091)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 2 (pid 164296)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 3 (pid 164495)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 4 (pid 164718)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 5 (pid 164920)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 6 (pid 165118)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 7 (pid 165338)
+   odzivi:  10 201;
+   proces: ŽIV
+-- ponovitev 8 (pid 165541)
+   odzivi:  10 201;
+   proces: ŽIV
+== rf brez e-pošte: sesutij 0/8

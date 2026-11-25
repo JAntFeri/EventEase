@@ -1,0 +1,56 @@
+# EE-N04, EE-N07, EE-N08, EE-N09 – potek z zajemom e-pošte (lažni curl, nič ni poslano)
+# 25. 11. 2026; backend ReleaseFast fee8af9; PostgreSQL 16 TimeZone=UTC (kot Docker/Railway)
+
+glas Ana: 201
+glas Bojan (brez e-pošte): 201
+{"success":true} potrditev: 200
+termin v API: ["2026-12-10 18:00:00+00","2026-12-10 19:00:00+00"]  (izbrano v vmesniku: 10. 12. 2026 ob 18:00)
+
+=== ZA: organizator@primer.si | ZADEVA: New vote in poll: Sestanek ekipe
+  Novo glasovanje za "Sestanek ekipe"
+Ana je oddal/a svoj glas za vaš dogodek.
+Ko vsi glasujejo, izberite termin in udeleženci bodo samodejno obveščeni.
+Lep pozdrav,
+Ekipa EventEase
+    EventEase — Enostavno usklajevanje terminov
+
+=== ZA: organizator@primer.si | ZADEVA: New vote in poll: Sestanek ekipe
+  Novo glasovanje za "Sestanek ekipe"
+Bojan je oddal/a svoj glas za vaš dogodek.
+Ko vsi glasujejo, izberite termin in udeleženci bodo samodejno obveščeni.
+Lep pozdrav,
+Ekipa EventEase
+    EventEase — Enostavno usklajevanje terminov
+
+=== ZA: organizator@primer.si | ZADEVA: Poll finalized: Sestanek ekipe
+  Glasovanje za "Sestanek ekipe" je zaključeno!
+Izbrani termin: 2026-12-10 18:00:00+00 - 2026-12-10 19:00:00+00
+Udeleženci:
+- Ana
+- Bojan
+Vsi udeleženci so prejeli obvestilo z izbranim terminom.
+Lep pozdrav,
+Ekipa EventEase
+    EventEase — Enostavno usklajevanje terminov
+
+=== ZA: ana@primer.si | ZADEVA: Poll finalized: Sestanek ekipe
+Pozdravljeni Ana,
+termin za "Sestanek ekipe" je potrjen.
+Izbrani termin: 2026-12-10 18:00:00+00 - 2026-12-10 19:00:00+00
+V prilogi najdete datoteko .ics za uvoz v vaš koledar.
+Vidimo se!
+Ekipa EventEase
+  ics| BEGIN:VCALENDAR
+  ics| VERSION:2.0
+  ics| PRODID:-//EventEase//Poll//EN
+  ics| METHOD:REQUEST
+  ics| BEGIN:VEVENT
+  ics| UID:20261210T180000Z-09da10f51c411aa6@eventease
+  ics| DTSTART:20261210T180000Z
+  ics| DTEND:20261210T190000Z
+  ics| SUMMARY:Sestanek ekipe
+  ics| DESCRIPTION:This event was scheduled via a poll.
+  ics| END:VEVENT
+  ics| END:VCALENDAR
+
+DTSTART 20261210T180000Z v Ljubljani: 10. 12. 2026 19:00
